@@ -137,6 +137,8 @@ function App() {
   const [dismissedChallengeId, setDismissedChallengeId] = useState(null);
   const [friendSearch, setFriendSearch] = useState('');
   const [challengeClock, setChallengeClock] = useState(Date.now());
+  const [challengeDeadline, setChallengeDeadline] = useState(0);
+  const [challengeSending, setChallengeSending] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const [confirmExit, setConfirmExit] = useState(false);
   const [socialReady, setSocialReady] = useState(false);
@@ -146,6 +148,7 @@ function App() {
   const gameStartedAtRef = useRef(null);
   const turnTimerRef = useRef(null);
   const launchingMatchRef = useRef(null);
+  const liveRefreshRef = useRef(false);
 
   const names = useMemo(() => {
     if (mode === 'versus') {
@@ -193,8 +196,10 @@ function App() {
   const outgoingChallenge = social.outgoingChallenges[0] || null;
   const challengeDialog = incomingChallenge || outgoingChallenge;
   const challengeDifficulty = DIFFICULTIES.find((item) => item.id === challengeDialog?.Tezina);
-  const challengeSecondsLeft = challengeDialog?.Kreiran
-    ? Math.max(0, 10 - Math.floor((challengeClock - new Date(challengeDialog.Kreiran).getTime()) / 1000))
+  const challengeSecondsLeft = challengeDialog
+    ? Math.max(0, challengeDeadline
+      ? Math.ceil((challengeDeadline - challengeClock) / 1000)
+      : Number(challengeDialog.PreostaloSekundi ?? 15))
     : 0;
   const gridSize = gridData.grid.length;
   const mobilePagePadding = viewportWidth <= 520 ? 20 : viewportWidth <= 760 ? 32 : 48;
@@ -241,6 +246,26 @@ function App() {
     setSocialReady(true);
   }, [user]);
 
+  const refreshLiveSocial = useCallback(async () => {
+    if (!user || liveRefreshRef.current) return;
+    liveRefreshRef.current = true;
+    try {
+      const [challenges, outgoingChallenges, currentMatch] = await Promise.all([
+        getChallenges(entityId(user)),
+        getOutgoingChallenges(entityId(user)),
+        getActiveMatch(entityId(user)),
+      ]);
+      setSocial((current) => ({
+        ...current,
+        challenges,
+        outgoingChallenges,
+        activeMatch: currentMatch,
+      }));
+    } finally {
+      liveRefreshRef.current = false;
+    }
+  }, [user]);
+
   useEffect(() => {
     refreshThemes();
   }, [refreshThemes]);
@@ -253,23 +278,33 @@ function App() {
 
   useEffect(() => {
     if (!user) return undefined;
-    const poll = window.setInterval(refreshSocial, 2000);
+    const poll = window.setInterval(refreshLiveSocial, 3000);
     return () => window.clearInterval(poll);
-  }, [refreshSocial, user]);
+  }, [refreshLiveSocial, user]);
 
   useEffect(() => {
-    if (!challengeDialog) return undefined;
+    if (!challengeDialog) {
+      setChallengeDeadline(0);
+      return undefined;
+    }
+    setChallengeDeadline(Date.now() + Number(challengeDialog.PreostaloSekundi ?? 15) * 1000);
     setChallengeClock(Date.now());
     const countdown = window.setInterval(() => setChallengeClock(Date.now()), 250);
     return () => window.clearInterval(countdown);
-  }, [challengeDialog]);
+  }, [challengeDialog?.ID]);
 
   useEffect(() => {
     if (challengeDialog && challengeSecondsLeft === 0) {
       setNotice('Vrijeme za odgovor na izazov je isteklo.');
-      refreshSocial();
+      const expiredId = entityId(challengeDialog);
+      setSocial((current) => ({
+        ...current,
+        challenges: current.challenges.filter((item) => entityId(item) !== expiredId),
+        outgoingChallenges: current.outgoingChallenges.filter((item) => entityId(item) !== expiredId),
+      }));
+      refreshLiveSocial();
     }
-  }, [challengeDialog, challengeSecondsLeft, refreshSocial]);
+  }, [challengeDialog, challengeSecondsLeft, refreshLiveSocial]);
 
   useEffect(() => {
     if (!user) return;
@@ -290,10 +325,10 @@ function App() {
       } catch {
         // A refresh still keeps the social views in sync.
       }
-      refreshSocial();
+      refreshLiveSocial();
     };
     return () => socket.close();
-  }, [activeMatch, mode, outgoingChallenge, refreshSocial, user]);
+  }, [activeMatch, mode, outgoingChallenge, refreshLiveSocial, user]);
 
   useEffect(() => {
     const currentMatch = social.activeMatch;
@@ -640,22 +675,26 @@ function App() {
   }
 
   async function sendVersusChallenge() {
-    if (!selectedVersusFriend) {
+    if (!selectedVersusFriend || challengeSending || selectedOutgoingChallenge) {
+      if (selectedOutgoingChallenge) return;
       setError('Izaberi prijatelja kojeg želiš da izazoveš.');
       return;
     }
+    setChallengeSending(true);
     setError('');
     setNotice('Pripremam iste riječi za oba igrača...');
     try {
       const isCustomTheme = Boolean(customTheme.trim());
-      const challengeWords = await fetchWords(
-        customTheme.trim() || theme.label,
-        theme.id,
-        diff.wc,
-        import.meta.env.VITE_GEMINI_API_KEY,
-        isCustomTheme,
-        diff.n,
-      );
+      const challengeWords = isCustomTheme
+        ? await fetchWords(
+          customTheme.trim(),
+          theme.id,
+          diff.wc,
+          import.meta.env.VITE_GEMINI_API_KEY,
+          true,
+          diff.n,
+        )
+        : [];
       const createdChallenge = await createChallenge({
         challengerId: entityId(user),
         opponentId: entityId(selectedVersusFriend),
@@ -663,7 +702,7 @@ function App() {
         customTheme: isCustomTheme ? customTheme.trim() : null,
         words: challengeWords,
         difficultyId: diff.id,
-        wordCount: challengeWords.length,
+        wordCount: isCustomTheme ? challengeWords.length : diff.wc,
         gridSize: diff.n,
         timeLimitSeconds: 300,
       });
@@ -679,10 +718,11 @@ function App() {
       setOnlineOpponent(selectedVersusFriend);
       setMode('versus');
       setActiveMatch(null);
-      refreshSocial();
     } catch (err) {
       setNotice('');
       setError(err.message || 'Izazov nije poslat.');
+    } finally {
+      setChallengeSending(false);
     }
   }
 
@@ -696,7 +736,7 @@ function App() {
         MojeRijeciJson: '[]',
         ProtivnikBrojPronadjenih: 0,
       });
-      refreshSocial();
+      refreshLiveSocial();
     } catch (err) {
       setError(err.message || 'Izazov nije moguće prihvatiti.');
     }
@@ -707,7 +747,11 @@ function App() {
     try {
       await rejectChallenge(challenge.ID, entityId(user));
       setNotice('Izazov je odbijen.');
-      refreshSocial();
+      setSocial((current) => ({
+        ...current,
+        challenges: current.challenges.filter((item) => entityId(item) !== entityId(challenge)),
+      }));
+      refreshLiveSocial();
     } catch (err) {
       setError(err.message || 'Izazov nije moguće odbiti.');
     }
@@ -937,9 +981,9 @@ function App() {
                   </div>
 
                   {mode === 'versus' ? (
-                    <button className={`btn ${selectedOutgoingChallenge ? 'btn-sent' : 'btn-primary'}`} type="button" onClick={sendVersusChallenge} disabled={!selectedVersusFriend || Boolean(selectedOutgoingChallenge)}>
+                    <button className={`btn ${selectedOutgoingChallenge || challengeSending ? 'btn-sent' : 'btn-primary'}`} type="button" onClick={sendVersusChallenge} disabled={!selectedVersusFriend || Boolean(selectedOutgoingChallenge) || challengeSending}>
                       <Check size={18} />
-                      {selectedOutgoingChallenge ? 'Zahtjev poslat' : 'Pošalji izazov'}
+                      {selectedOutgoingChallenge || challengeSending ? 'Zahtjev poslat' : 'Pošalji izazov'}
                     </button>
                   ) : (
                     <button className="btn btn-teal" type="button" onClick={() => launchGame()}>

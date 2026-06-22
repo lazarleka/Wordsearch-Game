@@ -146,7 +146,8 @@ public class GameRepository {
             if (hasActiveMatch(conn, request.getChallengerId()) || hasActiveMatch(conn, request.getOpponentId())) return null;
 
             PreparedStatement existingPs = conn.prepareStatement(
-                    "SELECT i.*, COALESCE(t.Naziv, i.CustomTema) AS TemaNaziv, k.KorisnickoIme AS ProtivnikIme " +
+                    "SELECT i.*, COALESCE(t.Naziv, i.CustomTema) AS TemaNaziv, k.KorisnickoIme AS ProtivnikIme, " +
+                    "GREATEST(0, 15 - TIMESTAMPDIFF(SECOND, i.Kreiran, NOW())) AS PreostaloSekundi " +
                     "FROM izazov i LEFT JOIN tema t ON t.ID=i.Tema_ID JOIN korisnik k ON k.ID=i.Protivnik_ID " +
                     "WHERE i.Izazivac_ID=? AND i.Protivnik_ID=? AND i.Status='na_cekanju' ORDER BY i.Kreiran DESC LIMIT 1");
             existingPs.setInt(1, request.getChallengerId());
@@ -180,7 +181,8 @@ public class GameRepository {
             if (!keys.next()) return null;
             PreparedStatement createdPs = conn.prepareStatement(
                     "SELECT i.*, COALESCE(t.Naziv, i.CustomTema) AS TemaNaziv, " +
-                    "izazivac.KorisnickoIme AS IzazivacIme, protivnik.KorisnickoIme AS ProtivnikIme " +
+                    "izazivac.KorisnickoIme AS IzazivacIme, protivnik.KorisnickoIme AS ProtivnikIme, " +
+                    "GREATEST(0, 15 - TIMESTAMPDIFF(SECOND, i.Kreiran, NOW())) AS PreostaloSekundi " +
                     "FROM izazov i LEFT JOIN tema t ON t.ID=i.Tema_ID " +
                     "JOIN korisnik izazivac ON izazivac.ID=i.Izazivac_ID " +
                     "JOIN korisnik protivnik ON protivnik.ID=i.Protivnik_ID WHERE i.ID=?");
@@ -223,7 +225,7 @@ public class GameRepository {
             conn.setAutoCommit(false);
             PreparedStatement select = conn.prepareStatement(
                     "SELECT * FROM izazov WHERE ID=? AND Protivnik_ID=? AND Status='na_cekanju' " +
-                    "AND Kreiran >= NOW() - INTERVAL 10 SECOND FOR UPDATE");
+                    "AND Kreiran >= NOW() - INTERVAL 15 SECOND FOR UPDATE");
             select.setInt(1, challengeId);
             select.setInt(2, userId);
             ResultSet challenge = select.executeQuery();
@@ -439,7 +441,8 @@ public class GameRepository {
         try (Connection conn = DBUtil.open()) {
             expireChallenges(conn);
             PreparedStatement ps = conn.prepareStatement(
-                    "SELECT i.*, COALESCE(t.Naziv, i.CustomTema) AS TemaNaziv, k.KorisnickoIme AS IzazivacIme " +
+                    "SELECT i.*, COALESCE(t.Naziv, i.CustomTema) AS TemaNaziv, k.KorisnickoIme AS IzazivacIme, " +
+                    "GREATEST(0, 15 - TIMESTAMPDIFF(SECOND, i.Kreiran, NOW())) AS PreostaloSekundi " +
                     "FROM izazov i LEFT JOIN tema t ON t.ID=i.Tema_ID JOIN korisnik k ON k.ID=i.Izazivac_ID " +
                     "WHERE i.Protivnik_ID=? AND i.Status='na_cekanju' ORDER BY i.Kreiran DESC");
             ps.setInt(1, userId);
@@ -456,7 +459,8 @@ public class GameRepository {
         try (Connection conn = DBUtil.open()) {
             expireChallenges(conn);
             PreparedStatement ps = conn.prepareStatement(
-                    "SELECT i.*, COALESCE(t.Naziv, i.CustomTema) AS TemaNaziv, k.KorisnickoIme AS ProtivnikIme " +
+                    "SELECT i.*, COALESCE(t.Naziv, i.CustomTema) AS TemaNaziv, k.KorisnickoIme AS ProtivnikIme, " +
+                    "GREATEST(0, 15 - TIMESTAMPDIFF(SECOND, i.Kreiran, NOW())) AS PreostaloSekundi " +
                     "FROM izazov i LEFT JOIN tema t ON t.ID=i.Tema_ID JOIN korisnik k ON k.ID=i.Protivnik_ID " +
                     "WHERE i.Izazivac_ID=? AND i.Status='na_cekanju' ORDER BY i.Kreiran DESC");
             ps.setInt(1, userId);
@@ -677,7 +681,7 @@ public class GameRepository {
     private void expireChallenges(Connection conn) throws Exception {
         PreparedStatement ps = conn.prepareStatement(
                 "UPDATE izazov SET Status='istekao', Odgovoren=NOW() " +
-                "WHERE Status='na_cekanju' AND Kreiran < NOW() - INTERVAL 10 SECOND");
+                "WHERE Status='na_cekanju' AND Kreiran < NOW() - INTERVAL 15 SECOND");
         ps.executeUpdate();
     }
 

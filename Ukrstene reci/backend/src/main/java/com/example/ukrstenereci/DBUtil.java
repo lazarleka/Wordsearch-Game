@@ -1,7 +1,9 @@
 package com.example.ukrstenereci;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -16,11 +18,11 @@ public class DBUtil {
             "DB_SSL_MODE",
             "app.db.ssl-mode",
             HOST.endsWith("aivencloud.com") ? "REQUIRED" : "PREFERRED");
+    private static final HikariDataSource DATA_SOURCE = createDataSource();
     private static boolean schemaChecked = false;
 
     public static Connection open() throws SQLException {
-        String url = jdbcUrl(DB_NAME);
-        Connection conn = DriverManager.getConnection(url, USERNAME, PASSWORD);
+        Connection conn = DATA_SOURCE.getConnection();
         ensureSchema(conn);
         return conn;
     }
@@ -36,6 +38,21 @@ public class DBUtil {
         String environmentValue = System.getenv(environmentName);
         if (environmentValue != null && !environmentValue.isBlank()) return environmentValue.trim();
         return System.getProperty(propertyName, fallback);
+    }
+
+    private static HikariDataSource createDataSource() {
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(jdbcUrl(DB_NAME));
+        config.setUsername(USERNAME);
+        config.setPassword(PASSWORD);
+        config.setPoolName("ukrstene-pool");
+        config.setMaximumPoolSize(Integer.parseInt(setting("DB_POOL_SIZE", "app.db.pool-size", "5")));
+        config.setMinimumIdle(1);
+        config.setConnectionTimeout(15000);
+        config.setValidationTimeout(5000);
+        config.setIdleTimeout(300000);
+        config.setMaxLifetime(1200000);
+        return new HikariDataSource(config);
     }
 
     private static synchronized void ensureSchema(Connection conn) {
@@ -111,6 +128,10 @@ public class DBUtil {
         executeQuietly(conn, "ALTER TABLE mec ADD COLUMN RijeciJson JSON NULL AFTER CustomTema");
         executeQuietly(conn, "ALTER TABLE mec ADD COLUMN RazlogZavrsetka VARCHAR(30) NULL AFTER Pobjednik_ID");
         executeQuietly(conn, "ALTER TABLE mec ADD COLUMN Napustio_ID INT NULL AFTER RazlogZavrsetka");
+        executeQuietly(conn, "ALTER TABLE izazov ADD INDEX idx_izazov_primalac_status (Protivnik_ID, Status, Kreiran)");
+        executeQuietly(conn, "ALTER TABLE izazov ADD INDEX idx_izazov_posiljalac_status (Izazivac_ID, Status, Kreiran)");
+        executeQuietly(conn, "ALTER TABLE mec ADD INDEX idx_mec_status_zapocet (Status, Zapocet)");
+        executeQuietly(conn, "ALTER TABLE mec_igrac ADD INDEX idx_mec_igrac_korisnik (Korisnik_ID, Mec_ID)");
     }
 
     private static void executeQuietly(Connection conn, String sql) {
