@@ -137,6 +137,7 @@ function App() {
   const [dismissedChallengeId, setDismissedChallengeId] = useState(null);
   const [friendSearch, setFriendSearch] = useState('');
   const [challengeClock, setChallengeClock] = useState(Date.now());
+  const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const [confirmExit, setConfirmExit] = useState(false);
   const [socialReady, setSocialReady] = useState(false);
   const [social, setSocial] = useState({ friends: [], friendships: [], allUsers: [], challenges: [], outgoingChallenges: [], activeMatch: null, leaderboard: [], history: [] });
@@ -195,7 +196,19 @@ function App() {
   const challengeSecondsLeft = challengeDialog?.Kreiran
     ? Math.max(0, 10 - Math.floor((challengeClock - new Date(challengeDialog.Kreiran).getTime()) / 1000))
     : 0;
-  const cellSize = gridData.grid.length ? Math.floor(Math.min(window.innerWidth - 24, 580) / gridData.grid.length) : 32;
+  const gridSize = gridData.grid.length;
+  const mobilePagePadding = viewportWidth <= 520 ? 20 : viewportWidth <= 760 ? 32 : 48;
+  const gridGap = viewportWidth <= 520 ? 2 : 3;
+  const availableGridWidth = Math.min(viewportWidth - mobilePagePadding, 580);
+  const cellSize = gridSize
+    ? Math.max(17, Math.floor((availableGridWidth - gridGap * (gridSize - 1)) / gridSize))
+    : 32;
+
+  useEffect(() => {
+    const updateViewport = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', updateViewport);
+    return () => window.removeEventListener('resize', updateViewport);
+  }, []);
 
   const refreshThemes = useCallback(() => {
     fetchThemesFromDatabase()
@@ -1071,7 +1084,7 @@ function App() {
             : <button className="btn btn-outline compact" type="button" onClick={() => finishGame()}>Završi</button>}
         </header>
         {mode === 'multiplayer' && <div className="current-turn">Na potezu: {currentPlayer === 0 ? names.p1 : names.p2}</div>}
-        <div className="grid-wrap"><div className="grid" style={{ gridTemplateColumns: `repeat(${gridData.grid.length}, ${cellSize}px)` }} onMouseLeave={() => selectionStart && setSelectionCells([[selectionStart.r, selectionStart.c]])} onTouchMove={handleTouchMove} onTouchEnd={endSelection}>
+        <div className="grid-wrap"><div className="grid" style={{ gridTemplateColumns: `repeat(${gridData.grid.length}, ${cellSize}px)`, gap: `${gridGap}px` }} onMouseLeave={() => selectionStart && setSelectionCells([[selectionStart.r, selectionStart.c]])} onTouchMove={handleTouchMove} onTouchEnd={endSelection}>
           {gridData.grid.map((row, r) => row.map((letter, c) => {
             const key = `${r}-${c}`;
             const doneColor = doneCells[key];
