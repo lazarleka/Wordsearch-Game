@@ -7,28 +7,35 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class DBUtil {
-    private static final String HOST = System.getProperty("app.db.host", "mysql-373b5ebe-ukrstene-reci.b.aivencloud.com");
-    private static final String PORT = System.getProperty("app.db.port", "11785");
-    private static final String DB_NAME = System.getProperty("app.db.name", "ukrstene_reci");
-    private static final String USERNAME = System.getProperty("app.db.username", "avnadmin");
-    private static final String PASSWORD = System.getProperty("app.db.password", "");
+    private static final String HOST = setting("DB_HOST", "app.db.host", "localhost");
+    private static final String PORT = setting("DB_PORT", "app.db.port", "3306");
+    private static final String DB_NAME = setting("DB_NAME", "app.db.name", "ukrstene_reci");
+    private static final String USERNAME = setting("DB_USERNAME", "app.db.username", "root");
+    private static final String PASSWORD = setting("DB_PASSWORD", "app.db.password", "");
+    private static final String SSL_MODE = setting(
+            "DB_SSL_MODE",
+            "app.db.ssl-mode",
+            HOST.endsWith("aivencloud.com") ? "REQUIRED" : "PREFERRED");
     private static boolean schemaChecked = false;
 
     public static Connection open() throws SQLException {
-        ensureDatabase();
-        String url = "jdbc:mysql://" + HOST + ":" + PORT + "/" + DB_NAME + "?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC";
+        String url = jdbcUrl(DB_NAME);
         Connection conn = DriverManager.getConnection(url, USERNAME, PASSWORD);
         ensureSchema(conn);
         return conn;
     }
 
-    private static synchronized void ensureDatabase() throws SQLException {
-        if (schemaChecked) return;
-        String serverUrl = "jdbc:mysql://" + HOST + ":" + PORT + "/?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC";
-        try (Connection conn = DriverManager.getConnection(serverUrl, USERNAME, PASSWORD);
-             Statement st = conn.createStatement()) {
-            st.execute("CREATE DATABASE IF NOT EXISTS " + DB_NAME + " CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-        }
+    private static String jdbcUrl(String database) {
+        return "jdbc:mysql://" + HOST + ":" + PORT + "/" + database
+                + "?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC"
+                + "&sslMode=" + SSL_MODE
+                + "&connectTimeout=10000&socketTimeout=30000";
+    }
+
+    private static String setting(String environmentName, String propertyName, String fallback) {
+        String environmentValue = System.getenv(environmentName);
+        if (environmentValue != null && !environmentValue.isBlank()) return environmentValue.trim();
+        return System.getProperty(propertyName, fallback);
     }
 
     private static synchronized void ensureSchema(Connection conn) {

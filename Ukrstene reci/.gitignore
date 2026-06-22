@@ -8,4 +8,7 @@ backend/*.log
 frontend-run.log
 .env
 .env.local
+.vercel/
 .DS_Store
+
+.vercel
