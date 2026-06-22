@@ -1,6 +1,7 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
-const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'http://localhost:8081/auth';
-export const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8081/ws/live';
+const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || 'https://wordsearch-game-1.onrender.com').replace(/\/$/, '');
+const API_URL = import.meta.env.VITE_API_URL || `${BACKEND_URL}/api`;
+const AUTH_URL = import.meta.env.VITE_AUTH_URL || `${BACKEND_URL}/auth`;
+export const WS_URL = import.meta.env.VITE_WS_URL || `${BACKEND_URL.replace(/^http/, 'ws')}/ws/live`;
 
 async function getJson(path) {
   const response = await fetch(`${API_URL}${path}`);
