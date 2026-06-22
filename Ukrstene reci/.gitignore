@@ -1,0 +1,11 @@
+node_modules/
+dist/
+build/
+.npm-cache/
+.vite-cache/
+backend/target/
+backend/*.log
+frontend-run.log
+.env
+.env.local
+.DS_Store

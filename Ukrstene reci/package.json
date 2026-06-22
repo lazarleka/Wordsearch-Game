@@ -1,0 +1,24 @@
+{
+  "name": "ukrstene-rijeci",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "npm run build && vite preview --configLoader native",
+    "dev:frontend": "vite --configLoader native",
+    "dev:backend": "cd backend && mvnw.cmd spring-boot:run",
+    "dev:full": "start /B cmd /c \"cd backend && mvnw.cmd spring-boot:run\" && vite --configLoader native",
+    "build": "vite build --configLoader native",
+    "preview": "vite preview --configLoader native"
+  },
+  "dependencies": {
+    "lucide-react": "^1.16.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "vite": "^8.0.14"
+  }
+}

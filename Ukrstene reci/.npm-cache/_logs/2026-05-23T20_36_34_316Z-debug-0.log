@@ -1,0 +1,345 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@10.9.3
+2 info using node@v22.18.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\.npmrc
+5 silly config load:file:C:\Users\User\.npmrc
+6 silly config load:file:C:\Users\User\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm install @esm-bundle/react @esm-bundle/react-dom
+8 verbose argv "--strict-ssl" "false" "--cache" ".npm-cache" "install" "@esm-bundle/react" "@esm-bundle/react-dom"
+9 verbose logfile logs-max:10 dir:C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\.npm-cache\_logs\2026-05-23T20_36_34_316Z-
+10 verbose logfile C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\.npm-cache\_logs\2026-05-23T20_36_34_316Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+13 silly idealTree buildDeps
+14 silly fetch manifest @esm-bundle/react@*
+15 silly packumentCache full:https://registry.npmjs.org/@esm-bundle%2freact cache-miss
+16 http fetch GET 200 https://registry.npmjs.org/@esm-bundle%2freact 771ms (cache miss)
+17 silly packumentCache full:https://registry.npmjs.org/@esm-bundle%2freact set size:undefined disposed:false
+18 silly fetch manifest @esm-bundle/react-dom@*
+19 silly packumentCache full:https://registry.npmjs.org/@esm-bundle%2freact-dom cache-miss
+20 http fetch GET 200 https://registry.npmjs.org/@esm-bundle%2freact-dom 608ms (cache miss)
+21 silly packumentCache full:https://registry.npmjs.org/@esm-bundle%2freact-dom set size:undefined disposed:false
+22 silly placeDep ROOT @esm-bundle/react@17.0.2-fix.1 OK for: ukrstene-rijeci@1.0.0 want: *
+23 silly placeDep ROOT @esm-bundle/react-dom@17.0.2-fix.0 OK for: ukrstene-rijeci@1.0.0 want: *
+24 silly reify moves {}
+25 silly audit bulk request {
+25 silly audit   '@esbuild/aix-ppc64': [ '0.21.5' ],
+25 silly audit   '@esbuild/android-arm': [ '0.21.5' ],
+25 silly audit   '@esbuild/android-arm64': [ '0.21.5' ],
+25 silly audit   '@esbuild/android-x64': [ '0.21.5' ],
+25 silly audit   '@esbuild/darwin-arm64': [ '0.21.5' ],
+25 silly audit   '@esbuild/darwin-x64': [ '0.21.5' ],
+25 silly audit   '@esbuild/freebsd-arm64': [ '0.21.5' ],
+25 silly audit   '@esbuild/freebsd-x64': [ '0.21.5' ],
+25 silly audit   '@esbuild/linux-arm': [ '0.21.5' ],
+25 silly audit   '@esbuild/linux-arm64': [ '0.21.5' ],
+25 silly audit   '@esbuild/linux-ia32': [ '0.21.5' ],
+25 silly audit   '@esbuild/linux-loong64': [ '0.21.5' ],
+25 silly audit   '@esbuild/linux-mips64el': [ '0.21.5' ],
+25 silly audit   '@esbuild/linux-ppc64': [ '0.21.5' ],
+25 silly audit   '@esbuild/linux-riscv64': [ '0.21.5' ],
+25 silly audit   '@esbuild/linux-s390x': [ '0.21.5' ],
+25 silly audit   '@esbuild/linux-x64': [ '0.21.5' ],
+25 silly audit   '@esbuild/netbsd-x64': [ '0.21.5' ],
+25 silly audit   '@esbuild/openbsd-x64': [ '0.21.5' ],
+25 silly audit   '@esbuild/sunos-x64': [ '0.21.5' ],
+25 silly audit   '@esbuild/win32-arm64': [ '0.21.5' ],
+25 silly audit   '@esbuild/win32-ia32': [ '0.21.5' ],
+25 silly audit   '@esbuild/win32-x64': [ '0.21.5' ],
+25 silly audit   '@rollup/rollup-android-arm-eabi': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-android-arm64': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-darwin-arm64': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-darwin-x64': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-freebsd-arm64': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-freebsd-x64': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-linux-arm-gnueabihf': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-linux-arm-musleabihf': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-linux-arm64-gnu': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-linux-arm64-musl': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-linux-loong64-gnu': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-linux-loong64-musl': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-linux-ppc64-gnu': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-linux-ppc64-musl': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-linux-riscv64-gnu': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-linux-riscv64-musl': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-linux-s390x-gnu': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-linux-x64-gnu': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-linux-x64-musl': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-openbsd-x64': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-openharmony-arm64': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-win32-arm64-msvc': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-win32-ia32-msvc': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-win32-x64-gnu': [ '4.60.4' ],
+25 silly audit   '@rollup/rollup-win32-x64-msvc': [ '4.60.4' ],
+25 silly audit   '@types/estree': [ '1.0.8' ],
+25 silly audit   esbuild: [ '0.21.5' ],
+25 silly audit   fsevents: [ '2.3.3' ],
+25 silly audit   'js-tokens': [ '4.0.0' ],
+25 silly audit   'loose-envify': [ '1.4.0' ],
+25 silly audit   nanoid: [ '3.3.12' ],
+25 silly audit   picocolors: [ '1.1.1' ],
+25 silly audit   postcss: [ '8.5.15' ],
+25 silly audit   react: [ '18.3.1' ],
+25 silly audit   'react-dom': [ '18.3.1' ],
+25 silly audit   rollup: [ '4.60.4' ],
+25 silly audit   scheduler: [ '0.23.2' ],
+25 silly audit   'source-map-js': [ '1.2.1' ],
+25 silly audit   vite: [ '5.4.21' ],
+25 silly audit   '@esm-bundle/react': [ '17.0.2-fix.1' ],
+25 silly audit   '@esm-bundle/react-dom': [ '17.0.2-fix.0' ]
+25 silly audit }
+26 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\fsevents
+27 silly reify mark deleted [
+27 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\fsevents'
+27 silly reify ]
+28 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-win32-ia32-msvc
+29 silly reify mark deleted [
+29 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-win32-ia32-msvc'
+29 silly reify ]
+30 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-win32-arm64-msvc
+31 silly reify mark deleted [
+31 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-win32-arm64-msvc'
+31 silly reify ]
+32 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-openharmony-arm64
+33 silly reify mark deleted [
+33 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-openharmony-arm64'
+33 silly reify ]
+34 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-openbsd-x64
+35 silly reify mark deleted [
+35 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-openbsd-x64'
+35 silly reify ]
+36 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-x64-musl
+37 silly reify mark deleted [
+37 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-x64-musl'
+37 silly reify ]
+38 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-x64-gnu
+39 silly reify mark deleted [
+39 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-x64-gnu'
+39 silly reify ]
+40 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-s390x-gnu
+41 silly reify mark deleted [
+41 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-s390x-gnu'
+41 silly reify ]
+42 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-riscv64-musl
+43 silly reify mark deleted [
+43 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-riscv64-musl'
+43 silly reify ]
+44 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-riscv64-gnu
+45 silly reify mark deleted [
+45 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-riscv64-gnu'
+45 silly reify ]
+46 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-ppc64-musl
+47 silly reify mark deleted [
+47 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-ppc64-musl'
+47 silly reify ]
+48 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-ppc64-gnu
+49 silly reify mark deleted [
+49 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-ppc64-gnu'
+49 silly reify ]
+50 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-loong64-musl
+51 silly reify mark deleted [
+51 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-loong64-musl'
+51 silly reify ]
+52 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-loong64-gnu
+53 silly reify mark deleted [
+53 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-loong64-gnu'
+53 silly reify ]
+54 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-arm64-musl
+55 silly reify mark deleted [
+55 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-arm64-musl'
+55 silly reify ]
+56 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-arm64-gnu
+57 silly reify mark deleted [
+57 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-arm64-gnu'
+57 silly reify ]
+58 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-arm-musleabihf
+59 silly reify mark deleted [
+59 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-arm-musleabihf'
+59 silly reify ]
+60 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-arm-gnueabihf
+61 silly reify mark deleted [
+61 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-arm-gnueabihf'
+61 silly reify ]
+62 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-freebsd-x64
+63 silly reify mark deleted [
+63 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-freebsd-x64'
+63 silly reify ]
+64 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-freebsd-arm64
+65 silly reify mark deleted [
+65 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-freebsd-arm64'
+65 silly reify ]
+66 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-darwin-x64
+67 silly reify mark deleted [
+67 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-darwin-x64'
+67 silly reify ]
+68 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-darwin-arm64
+69 silly reify mark deleted [
+69 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-darwin-arm64'
+69 silly reify ]
+70 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-android-arm64
+71 silly reify mark deleted [
+71 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-android-arm64'
+71 silly reify ]
+72 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-android-arm-eabi
+73 silly reify mark deleted [
+73 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-android-arm-eabi'
+73 silly reify ]
+74 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\win32-ia32
+75 silly reify mark deleted [
+75 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\win32-ia32'
+75 silly reify ]
+76 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\win32-arm64
+77 silly reify mark deleted [
+77 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\win32-arm64'
+77 silly reify ]
+78 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\sunos-x64
+79 silly reify mark deleted [
+79 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\sunos-x64'
+79 silly reify ]
+80 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\openbsd-x64
+81 silly reify mark deleted [
+81 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\openbsd-x64'
+81 silly reify ]
+82 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\netbsd-x64
+83 silly reify mark deleted [
+83 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\netbsd-x64'
+83 silly reify ]
+84 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\linux-x64
+85 silly reify mark deleted [
+85 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\linux-x64'
+85 silly reify ]
+86 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\linux-s390x
+87 silly reify mark deleted [
+87 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\linux-s390x'
+87 silly reify ]
+88 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\linux-riscv64
+89 silly reify mark deleted [
+89 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\linux-riscv64'
+89 silly reify ]
+90 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\linux-ppc64
+91 silly reify mark deleted [
+91 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\linux-ppc64'
+91 silly reify ]
+92 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\linux-mips64el
+93 silly reify mark deleted [
+93 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\linux-mips64el'
+93 silly reify ]
+94 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\linux-loong64
+95 silly reify mark deleted [
+95 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\linux-loong64'
+95 silly reify ]
+96 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\linux-ia32
+97 silly reify mark deleted [
+97 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\linux-ia32'
+97 silly reify ]
+98 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\linux-arm64
+99 silly reify mark deleted [
+99 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\linux-arm64'
+99 silly reify ]
+100 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\linux-arm
+101 silly reify mark deleted [
+101 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\linux-arm'
+101 silly reify ]
+102 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\freebsd-x64
+103 silly reify mark deleted [
+103 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\freebsd-x64'
+103 silly reify ]
+104 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\freebsd-arm64
+105 silly reify mark deleted [
+105 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\freebsd-arm64'
+105 silly reify ]
+106 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\darwin-x64
+107 silly reify mark deleted [
+107 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\darwin-x64'
+107 silly reify ]
+108 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\darwin-arm64
+109 silly reify mark deleted [
+109 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\darwin-arm64'
+109 silly reify ]
+110 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\android-x64
+111 silly reify mark deleted [
+111 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\android-x64'
+111 silly reify ]
+112 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\android-arm64
+113 silly reify mark deleted [
+113 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\android-arm64'
+113 silly reify ]
+114 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\android-arm
+115 silly reify mark deleted [
+115 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\android-arm'
+115 silly reify ]
+116 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\aix-ppc64
+117 silly reify mark deleted [
+117 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\aix-ppc64'
+117 silly reify ]
+118 http cache @esm-bundle/react@https://registry.npmjs.org/@esm-bundle/react/-/react-17.0.2-fix.1.tgz 0ms (cache hit)
+119 http cache @esm-bundle/react-dom@https://registry.npmjs.org/@esm-bundle/react-dom/-/react-dom-17.0.2-fix.0.tgz 0ms (cache hit)
+120 silly tarball no local data for @esm-bundle/react@https://registry.npmjs.org/@esm-bundle/react/-/react-17.0.2-fix.1.tgz. Extracting by manifest.
+121 silly tarball no local data for @esm-bundle/react-dom@https://registry.npmjs.org/@esm-bundle/react-dom/-/react-dom-17.0.2-fix.0.tgz. Extracting by manifest.
+122 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 242ms
+123 silly audit report {
+123 silly audit report   esbuild: [
+123 silly audit report     {
+123 silly audit report       id: 1102341,
+123 silly audit report       url: 'https://github.com/advisories/GHSA-67mh-4wv8-2f99',
+123 silly audit report       title: 'esbuild enables any website to send any requests to the development server and read the response',
+123 silly audit report       severity: 'moderate',
+123 silly audit report       vulnerable_versions: '<=0.24.2',
+123 silly audit report       cwe: [Array],
+123 silly audit report       cvss: [Object]
+123 silly audit report     }
+123 silly audit report   ],
+123 silly audit report   vite: [
+123 silly audit report     {
+123 silly audit report       id: 1116229,
+123 silly audit report       url: 'https://github.com/advisories/GHSA-4w7w-66w2-5vf9',
+123 silly audit report       title: 'Vite Vulnerable to Path Traversal in Optimized Deps `.map` Handling',
+123 silly audit report       severity: 'moderate',
+123 silly audit report       vulnerable_versions: '<=6.4.1',
+123 silly audit report       cwe: [Array],
+123 silly audit report       cvss: [Object]
+123 silly audit report     }
+123 silly audit report   ]
+123 silly audit report }
+124 silly packumentCache corgi:https://registry.npmjs.org/esbuild cache-miss
+125 silly packumentCache corgi:https://registry.npmjs.org/vite cache-miss
+126 http cache https://registry.npmjs.org/esbuild 18ms (cache hit)
+127 silly packumentCache corgi:https://registry.npmjs.org/esbuild set size:885757 disposed:false
+128 http cache https://registry.npmjs.org/vite 30ms (cache hit)
+129 silly packumentCache corgi:https://registry.npmjs.org/vite set size:2249718 disposed:false
+130 http fetch GET 200 https://registry.npmjs.org/@esm-bundle/react/-/react-17.0.2-fix.1.tgz 742ms (cache miss)
+131 http fetch GET 200 https://registry.npmjs.org/@esm-bundle/react-dom/-/react-dom-17.0.2-fix.0.tgz 1037ms (cache miss)
+132 info run @esm-bundle/react@17.0.2-fix.1 postinstall node_modules/@esm-bundle/react husky install
+133 info run @esm-bundle/react@17.0.2-fix.1 postinstall { code: 1, signal: null }
+134 verbose stack Error: command failed
+134 verbose stack     at promiseSpawn (C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\promise-spawn\lib\index.js:22:22)
+134 verbose stack     at spawnWithShell (C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\promise-spawn\lib\index.js:124:10)
+134 verbose stack     at promiseSpawn (C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\promise-spawn\lib\index.js:12:12)
+134 verbose stack     at runScriptPkg (C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\run-script\lib\run-script-pkg.js:79:13)
+134 verbose stack     at runScript (C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\run-script\lib\run-script.js:9:12)
+134 verbose stack     at C:\Program Files\nodejs\node_modules\npm\node_modules\@npmcli\arborist\lib\arborist\rebuild.js:329:17
+134 verbose stack     at run (C:\Program Files\nodejs\node_modules\npm\node_modules\promise-call-limit\dist\commonjs\index.js:67:22)
+134 verbose stack     at C:\Program Files\nodejs\node_modules\npm\node_modules\promise-call-limit\dist\commonjs\index.js:84:9
+134 verbose stack     at new Promise (<anonymous>)
+134 verbose stack     at callLimit (C:\Program Files\nodejs\node_modules\npm\node_modules\promise-call-limit\dist\commonjs\index.js:35:69)
+135 verbose pkgid @esm-bundle/react@17.0.2-fix.1
+136 error code 1
+137 error path C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esm-bundle\react
+138 error command failed
+139 error command C:\WINDOWS\system32\cmd.exe /d /s /c husky install
+140 error 'husky' is not recognized as an internal or external command,
+140 error operable program or batch file.
+141 silly unfinished npm timer reify 1779568594936
+142 silly unfinished npm timer reify:build 1779568597452
+143 silly unfinished npm timer build 1779568597452
+144 silly unfinished npm timer build:deps 1779568597453
+145 silly unfinished npm timer build:run:postinstall 1779568597457
+146 silly unfinished npm timer build:run:postinstall:node_modules/@esm-bundle/react 1779568597457
+147 verbose cwd C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci
+148 verbose os Windows_NT 10.0.26200
+149 verbose node v22.18.0
+150 verbose npm  v10.9.3
+151 verbose exit 1
+152 verbose code 1
+153 error A complete log of this run can be found in: C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\.npm-cache\_logs\2026-05-23T20_36_34_316Z-debug-0.log

@@ -1,0 +1,639 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@10.9.3
+2 info using node@v22.18.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\.npmrc
+5 silly config load:file:C:\Users\User\.npmrc
+6 silly config load:file:C:\Users\User\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm install
+8 verbose argv "--strict-ssl" "false" "--cache" ".npm-cache" "install"
+9 verbose logfile logs-max:10 dir:C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\.npm-cache\_logs\2026-05-23T20_34_12_371Z-
+10 verbose logfile C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\.npm-cache\_logs\2026-05-23T20_34_12_371Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+13 silly idealTree buildDeps
+14 silly fetch manifest vite@^5.4.21
+15 silly packumentCache full:https://registry.npmjs.org/vite cache-miss
+16 http fetch GET 200 https://registry.npmjs.org/npm 354ms
+17 http fetch GET 200 https://registry.npmjs.org/vite 1426ms (cache miss)
+18 silly packumentCache full:https://registry.npmjs.org/vite set size:undefined disposed:false
+19 silly fetch manifest @types/node@^18.0.0 || >=20.0.0
+20 silly packumentCache full:https://registry.npmjs.org/@types%2fnode cache-miss
+21 http fetch GET 200 https://registry.npmjs.org/@types%2fnode 244ms (cache miss)
+22 silly packumentCache full:https://registry.npmjs.org/@types%2fnode set size:undefined disposed:false
+23 silly fetch manifest less@*
+24 silly packumentCache full:https://registry.npmjs.org/less cache-miss
+25 http fetch GET 200 https://registry.npmjs.org/less 90ms (cache miss)
+26 silly packumentCache full:https://registry.npmjs.org/less set size:undefined disposed:false
+27 silly fetch manifest lightningcss@^1.21.0
+28 silly packumentCache full:https://registry.npmjs.org/lightningcss cache-miss
+29 http fetch GET 200 https://registry.npmjs.org/lightningcss 79ms (cache miss)
+30 silly packumentCache full:https://registry.npmjs.org/lightningcss set size:undefined disposed:false
+31 silly fetch manifest sass@*
+32 silly packumentCache full:https://registry.npmjs.org/sass cache-miss
+33 http fetch GET 200 https://registry.npmjs.org/sass 904ms (cache miss)
+34 silly packumentCache full:https://registry.npmjs.org/sass set size:undefined disposed:false
+35 silly fetch manifest sass-embedded@*
+36 silly packumentCache full:https://registry.npmjs.org/sass-embedded cache-miss
+37 http fetch GET 200 https://registry.npmjs.org/sass-embedded 114ms (cache miss)
+38 silly packumentCache full:https://registry.npmjs.org/sass-embedded set size:undefined disposed:false
+39 silly fetch manifest stylus@*
+40 silly packumentCache full:https://registry.npmjs.org/stylus cache-miss
+41 http fetch GET 200 https://registry.npmjs.org/stylus 98ms (cache miss)
+42 silly packumentCache full:https://registry.npmjs.org/stylus set size:undefined disposed:false
+43 silly fetch manifest sugarss@*
+44 silly packumentCache full:https://registry.npmjs.org/sugarss cache-miss
+45 http fetch GET 200 https://registry.npmjs.org/sugarss 101ms (cache miss)
+46 silly packumentCache full:https://registry.npmjs.org/sugarss set size:undefined disposed:false
+47 silly fetch manifest postcss@^8.3.3
+48 silly packumentCache full:https://registry.npmjs.org/postcss cache-miss
+49 http fetch GET 200 https://registry.npmjs.org/postcss 299ms (cache miss)
+50 silly packumentCache full:https://registry.npmjs.org/postcss set size:undefined disposed:false
+51 silly fetch manifest terser@^5.4.0
+52 silly packumentCache full:https://registry.npmjs.org/terser cache-miss
+53 http fetch GET 200 https://registry.npmjs.org/terser 140ms (cache miss)
+54 silly packumentCache full:https://registry.npmjs.org/terser set size:undefined disposed:false
+55 silly fetch manifest react@^18.3.1
+56 silly packumentCache full:https://registry.npmjs.org/react cache-miss
+57 http fetch GET 200 https://registry.npmjs.org/react 242ms (cache miss)
+58 silly packumentCache full:https://registry.npmjs.org/react set size:undefined disposed:false
+59 silly fetch manifest react-dom@^18.3.1
+60 silly packumentCache full:https://registry.npmjs.org/react-dom cache-miss
+61 http fetch GET 200 https://registry.npmjs.org/react-dom 234ms (cache miss)
+62 silly packumentCache full:https://registry.npmjs.org/react-dom set size:undefined disposed:false
+63 silly placeDep ROOT react@18.3.1 REPLACE for: ukrstene-rijeci@1.0.0 want: ^18.3.1
+64 silly placeDep ROOT react-dom@18.3.1 REPLACE for: ukrstene-rijeci@1.0.0 want: ^18.3.1
+65 silly placeDep ROOT vite@5.4.21 REPLACE for: ukrstene-rijeci@1.0.0 want: ^5.4.21
+66 silly fetch manifest loose-envify@^1.1.0
+67 silly packumentCache full:https://registry.npmjs.org/loose-envify cache-miss
+68 silly fetch manifest scheduler@^0.23.2
+69 silly packumentCache full:https://registry.npmjs.org/scheduler cache-miss
+70 silly fetch manifest loose-envify@^1.1.0
+71 silly packumentCache full:https://registry.npmjs.org/loose-envify cache-miss
+72 silly fetch manifest esbuild@^0.21.3
+73 silly packumentCache full:https://registry.npmjs.org/esbuild cache-miss
+74 http fetch GET 200 https://registry.npmjs.org/loose-envify 65ms (cache miss)
+75 silly packumentCache full:https://registry.npmjs.org/loose-envify set size:undefined disposed:false
+76 http fetch GET 200 https://registry.npmjs.org/loose-envify 150ms (cache miss)
+77 silly packumentCache full:https://registry.npmjs.org/loose-envify set size:undefined disposed:false
+78 http fetch GET 200 https://registry.npmjs.org/scheduler 213ms (cache miss)
+79 silly packumentCache full:https://registry.npmjs.org/scheduler set size:undefined disposed:false
+80 http fetch GET 200 https://registry.npmjs.org/esbuild 268ms (cache miss)
+81 silly packumentCache full:https://registry.npmjs.org/esbuild set size:undefined disposed:false
+82 silly placeDep ROOT loose-envify@1.4.0 OK for: react@18.3.1 want: ^1.1.0
+83 silly fetch manifest js-tokens@^3.0.0 || ^4.0.0
+84 silly packumentCache full:https://registry.npmjs.org/js-tokens cache-miss
+85 http fetch GET 200 https://registry.npmjs.org/js-tokens 68ms (cache miss)
+86 silly packumentCache full:https://registry.npmjs.org/js-tokens set size:undefined disposed:false
+87 silly placeDep ROOT js-tokens@4.0.0 OK for: loose-envify@1.4.0 want: ^3.0.0 || ^4.0.0
+88 silly placeDep ROOT scheduler@0.23.2 OK for: react-dom@18.3.1 want: ^0.23.2
+89 silly placeDep ROOT esbuild@0.21.5 OK for: vite@5.4.21 want: ^0.21.3
+90 silly fetch manifest @esbuild/aix-ppc64@0.21.5
+91 silly packumentCache full:https://registry.npmjs.org/@esbuild%2faix-ppc64 cache-miss
+92 silly fetch manifest @esbuild/linux-arm@0.21.5
+93 silly packumentCache full:https://registry.npmjs.org/@esbuild%2flinux-arm cache-miss
+94 silly fetch manifest @esbuild/linux-x64@0.21.5
+95 silly packumentCache full:https://registry.npmjs.org/@esbuild%2flinux-x64 cache-miss
+96 silly fetch manifest @esbuild/sunos-x64@0.21.5
+97 silly packumentCache full:https://registry.npmjs.org/@esbuild%2fsunos-x64 cache-miss
+98 silly fetch manifest @esbuild/win32-x64@0.21.5
+99 silly packumentCache full:https://registry.npmjs.org/@esbuild%2fwin32-x64 cache-miss
+100 silly fetch manifest @esbuild/darwin-x64@0.21.5
+101 silly packumentCache full:https://registry.npmjs.org/@esbuild%2fdarwin-x64 cache-miss
+102 silly fetch manifest @esbuild/linux-ia32@0.21.5
+103 silly packumentCache full:https://registry.npmjs.org/@esbuild%2flinux-ia32 cache-miss
+104 http fetch GET 200 https://registry.npmjs.org/@esbuild%2flinux-arm 89ms (cache miss)
+105 silly packumentCache full:https://registry.npmjs.org/@esbuild%2flinux-arm set size:undefined disposed:false
+106 silly fetch manifest @esbuild/netbsd-x64@0.21.5
+107 silly packumentCache full:https://registry.npmjs.org/@esbuild%2fnetbsd-x64 cache-miss
+108 http fetch GET 200 https://registry.npmjs.org/@esbuild%2flinux-x64 102ms (cache miss)
+109 silly packumentCache full:https://registry.npmjs.org/@esbuild%2flinux-x64 set size:undefined disposed:false
+110 silly fetch manifest @esbuild/win32-ia32@0.21.5
+111 silly packumentCache full:https://registry.npmjs.org/@esbuild%2fwin32-ia32 cache-miss
+112 http fetch GET 200 https://registry.npmjs.org/@esbuild%2fsunos-x64 121ms (cache miss)
+113 silly packumentCache full:https://registry.npmjs.org/@esbuild%2fsunos-x64 set size:undefined disposed:false
+114 silly fetch manifest @esbuild/android-arm@0.21.5
+115 silly packumentCache full:https://registry.npmjs.org/@esbuild%2fandroid-arm cache-miss
+116 http fetch GET 200 https://registry.npmjs.org/@esbuild%2fnetbsd-x64 81ms (cache miss)
+117 silly packumentCache full:https://registry.npmjs.org/@esbuild%2fnetbsd-x64 set size:undefined disposed:false
+118 silly fetch manifest @esbuild/android-x64@0.21.5
+119 silly packumentCache full:https://registry.npmjs.org/@esbuild%2fandroid-x64 cache-miss
+120 http fetch GET 200 https://registry.npmjs.org/@esbuild%2fwin32-x64 191ms (cache miss)
+121 silly packumentCache full:https://registry.npmjs.org/@esbuild%2fwin32-x64 set size:undefined disposed:false
+122 silly fetch manifest @esbuild/freebsd-x64@0.21.5
+123 silly packumentCache full:https://registry.npmjs.org/@esbuild%2ffreebsd-x64 cache-miss
+124 http fetch GET 200 https://registry.npmjs.org/@esbuild%2flinux-ia32 209ms (cache miss)
+125 silly packumentCache full:https://registry.npmjs.org/@esbuild%2flinux-ia32 set size:undefined disposed:false
+126 silly fetch manifest @esbuild/linux-arm64@0.21.5
+127 silly packumentCache full:https://registry.npmjs.org/@esbuild%2flinux-arm64 cache-miss
+128 http fetch GET 200 https://registry.npmjs.org/@esbuild%2fdarwin-x64 221ms (cache miss)
+129 silly packumentCache full:https://registry.npmjs.org/@esbuild%2fdarwin-x64 set size:undefined disposed:false
+130 silly fetch manifest @esbuild/linux-ppc64@0.21.5
+131 silly packumentCache full:https://registry.npmjs.org/@esbuild%2flinux-ppc64 cache-miss
+132 http fetch GET 200 https://registry.npmjs.org/@esbuild%2fandroid-arm 111ms (cache miss)
+133 silly packumentCache full:https://registry.npmjs.org/@esbuild%2fandroid-arm set size:undefined disposed:false
+134 silly fetch manifest @esbuild/linux-s390x@0.21.5
+135 silly packumentCache full:https://registry.npmjs.org/@esbuild%2flinux-s390x cache-miss
+136 http fetch GET 200 https://registry.npmjs.org/@esbuild%2fandroid-x64 79ms (cache miss)
+137 silly packumentCache full:https://registry.npmjs.org/@esbuild%2fandroid-x64 set size:undefined disposed:false
+138 silly fetch manifest @esbuild/openbsd-x64@0.21.5
+139 silly packumentCache full:https://registry.npmjs.org/@esbuild%2fopenbsd-x64 cache-miss
+140 http fetch GET 200 https://registry.npmjs.org/@esbuild%2ffreebsd-x64 88ms (cache miss)
+141 silly packumentCache full:https://registry.npmjs.org/@esbuild%2ffreebsd-x64 set size:undefined disposed:false
+142 silly fetch manifest @esbuild/win32-arm64@0.21.5
+143 silly packumentCache full:https://registry.npmjs.org/@esbuild%2fwin32-arm64 cache-miss
+144 http fetch GET 200 https://registry.npmjs.org/@esbuild%2faix-ppc64 291ms (cache miss)
+145 silly packumentCache full:https://registry.npmjs.org/@esbuild%2faix-ppc64 set size:undefined disposed:false
+146 silly fetch manifest @esbuild/darwin-arm64@0.21.5
+147 silly packumentCache full:https://registry.npmjs.org/@esbuild%2fdarwin-arm64 cache-miss
+148 http fetch GET 200 https://registry.npmjs.org/@esbuild%2flinux-arm64 88ms (cache miss)
+149 silly packumentCache full:https://registry.npmjs.org/@esbuild%2flinux-arm64 set size:undefined disposed:false
+150 silly fetch manifest @esbuild/android-arm64@0.21.5
+151 silly packumentCache full:https://registry.npmjs.org/@esbuild%2fandroid-arm64 cache-miss
+152 http fetch GET 200 https://registry.npmjs.org/@esbuild%2flinux-s390x 118ms (cache miss)
+153 silly packumentCache full:https://registry.npmjs.org/@esbuild%2flinux-s390x set size:undefined disposed:false
+154 silly fetch manifest @esbuild/freebsd-arm64@0.21.5
+155 silly packumentCache full:https://registry.npmjs.org/@esbuild%2ffreebsd-arm64 cache-miss
+156 http fetch GET 200 https://registry.npmjs.org/@esbuild%2flinux-ppc64 145ms (cache miss)
+157 silly packumentCache full:https://registry.npmjs.org/@esbuild%2flinux-ppc64 set size:undefined disposed:false
+158 silly fetch manifest @esbuild/linux-loong64@0.21.5
+159 silly packumentCache full:https://registry.npmjs.org/@esbuild%2flinux-loong64 cache-miss
+160 http fetch GET 200 https://registry.npmjs.org/@esbuild%2fopenbsd-x64 121ms (cache miss)
+161 silly packumentCache full:https://registry.npmjs.org/@esbuild%2fopenbsd-x64 set size:undefined disposed:false
+162 silly fetch manifest @esbuild/linux-riscv64@0.21.5
+163 silly packumentCache full:https://registry.npmjs.org/@esbuild%2flinux-riscv64 cache-miss
+164 http fetch GET 200 https://registry.npmjs.org/@esbuild%2fwin32-ia32 281ms (cache miss)
+165 silly packumentCache full:https://registry.npmjs.org/@esbuild%2fwin32-ia32 set size:undefined disposed:false
+166 silly fetch manifest @esbuild/linux-mips64el@0.21.5
+167 silly packumentCache full:https://registry.npmjs.org/@esbuild%2flinux-mips64el cache-miss
+168 http fetch GET 200 https://registry.npmjs.org/@esbuild%2fdarwin-arm64 101ms (cache miss)
+169 silly packumentCache full:https://registry.npmjs.org/@esbuild%2fdarwin-arm64 set size:undefined disposed:false
+170 http fetch GET 200 https://registry.npmjs.org/@esbuild%2fandroid-arm64 91ms (cache miss)
+171 silly packumentCache full:https://registry.npmjs.org/@esbuild%2fandroid-arm64 set size:undefined disposed:false
+172 http fetch GET 200 https://registry.npmjs.org/@esbuild%2fwin32-arm64 124ms (cache miss)
+173 silly packumentCache full:https://registry.npmjs.org/@esbuild%2fwin32-arm64 set size:undefined disposed:false
+174 http fetch GET 200 https://registry.npmjs.org/@esbuild%2ffreebsd-arm64 114ms (cache miss)
+175 silly packumentCache full:https://registry.npmjs.org/@esbuild%2ffreebsd-arm64 set size:undefined disposed:false
+176 http fetch GET 200 https://registry.npmjs.org/@esbuild%2flinux-mips64el 123ms (cache miss)
+177 silly packumentCache full:https://registry.npmjs.org/@esbuild%2flinux-mips64el set size:undefined disposed:false
+178 http fetch GET 200 https://registry.npmjs.org/@esbuild%2flinux-loong64 142ms (cache miss)
+179 silly packumentCache full:https://registry.npmjs.org/@esbuild%2flinux-loong64 set size:undefined disposed:false
+180 http fetch GET 200 https://registry.npmjs.org/@esbuild%2flinux-riscv64 541ms (cache miss)
+181 silly packumentCache full:https://registry.npmjs.org/@esbuild%2flinux-riscv64 set size:undefined disposed:false
+182 silly placeDep ROOT @esbuild/aix-ppc64@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+183 silly placeDep ROOT @esbuild/android-arm@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+184 silly placeDep ROOT @esbuild/android-arm64@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+185 silly placeDep ROOT @esbuild/android-x64@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+186 silly placeDep ROOT @esbuild/darwin-arm64@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+187 silly placeDep ROOT @esbuild/darwin-x64@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+188 silly placeDep ROOT @esbuild/freebsd-arm64@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+189 silly placeDep ROOT @esbuild/freebsd-x64@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+190 silly placeDep ROOT @esbuild/linux-arm@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+191 silly placeDep ROOT @esbuild/linux-arm64@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+192 silly placeDep ROOT @esbuild/linux-ia32@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+193 silly placeDep ROOT @esbuild/linux-loong64@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+194 silly placeDep ROOT @esbuild/linux-mips64el@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+195 silly placeDep ROOT @esbuild/linux-ppc64@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+196 silly placeDep ROOT @esbuild/linux-riscv64@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+197 silly placeDep ROOT @esbuild/linux-s390x@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+198 silly placeDep ROOT @esbuild/linux-x64@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+199 silly placeDep ROOT @esbuild/netbsd-x64@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+200 silly placeDep ROOT @esbuild/openbsd-x64@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+201 silly placeDep ROOT @esbuild/sunos-x64@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+202 silly placeDep ROOT @esbuild/win32-arm64@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+203 silly placeDep ROOT @esbuild/win32-ia32@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+204 silly placeDep ROOT @esbuild/win32-x64@0.21.5 OK for: esbuild@0.21.5 want: 0.21.5
+205 silly reify mark retired [
+205 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\win32-x64'
+205 silly reify ]
+206 silly reify mark retired [
+206 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\esbuild',
+206 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.bin\\esbuild',
+206 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.bin\\esbuild.cmd',
+206 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.bin\\esbuild.ps1'
+206 silly reify ]
+207 silly reify mark retired [
+207 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\fdir'
+207 silly reify ]
+208 silly reify mark retired [
+208 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\picomatch'
+208 silly reify ]
+209 silly reify mark retired [
+209 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\react'
+209 silly reify ]
+210 silly reify mark retired [
+210 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\react-dom'
+210 silly reify ]
+211 silly reify mark retired [
+211 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\scheduler'
+211 silly reify ]
+212 silly reify mark retired [
+212 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\tinyglobby'
+212 silly reify ]
+213 silly reify mark retired [
+213 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\vite',
+213 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.bin\\vite',
+213 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.bin\\vite.cmd',
+213 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.bin\\vite.ps1'
+213 silly reify ]
+214 silly reify moves {
+214 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\win32-x64': 'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\.win32-x64-acSe68Q7',
+214 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\esbuild': 'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.esbuild-nVjEdIXL',
+214 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.bin\\esbuild': 'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.bin\\.esbuild-cB1qS3Mq',
+214 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.bin\\esbuild.cmd': 'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.bin\\.esbuild.cmd-qE1ARv7i',
+214 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.bin\\esbuild.ps1': 'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.bin\\.esbuild.ps1-eHpURWWI',
+214 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\fdir': 'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.fdir-T3zkr6zV',
+214 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\picomatch': 'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.picomatch-IUpKiGDK',
+214 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\react': 'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.react-pxaLBYT4',
+214 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\react-dom': 'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.react-dom-SNByGEG7',
+214 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\scheduler': 'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.scheduler-H9jsWKic',
+214 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\tinyglobby': 'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.tinyglobby-5zKRrf7C',
+214 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\vite': 'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.vite-1n06sOIl',
+214 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.bin\\vite': 'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.bin\\.vite-9Zp9NEmM',
+214 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.bin\\vite.cmd': 'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.bin\\.vite.cmd-OgSz1zkB',
+214 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.bin\\vite.ps1': 'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\.bin\\.vite.ps1-VyZzzRqf'
+214 silly reify }
+215 silly audit bulk request {
+215 silly audit   '@rollup/rollup-android-arm-eabi': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-android-arm64': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-darwin-arm64': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-darwin-x64': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-freebsd-arm64': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-freebsd-x64': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-linux-arm-gnueabihf': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-linux-arm-musleabihf': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-linux-arm64-gnu': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-linux-arm64-musl': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-linux-loong64-gnu': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-linux-loong64-musl': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-linux-ppc64-gnu': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-linux-ppc64-musl': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-linux-riscv64-gnu': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-linux-riscv64-musl': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-linux-s390x-gnu': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-linux-x64-gnu': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-linux-x64-musl': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-openbsd-x64': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-openharmony-arm64': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-win32-arm64-msvc': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-win32-ia32-msvc': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-win32-x64-gnu': [ '4.60.4' ],
+215 silly audit   '@rollup/rollup-win32-x64-msvc': [ '4.60.4' ],
+215 silly audit   '@types/estree': [ '1.0.8' ],
+215 silly audit   fsevents: [ '2.3.3' ],
+215 silly audit   nanoid: [ '3.3.12' ],
+215 silly audit   picocolors: [ '1.1.1' ],
+215 silly audit   postcss: [ '8.5.15' ],
+215 silly audit   rollup: [ '4.60.4' ],
+215 silly audit   'source-map-js': [ '1.2.1' ],
+215 silly audit   react: [ '18.3.1' ],
+215 silly audit   'react-dom': [ '18.3.1' ],
+215 silly audit   vite: [ '5.4.21' ],
+215 silly audit   'loose-envify': [ '1.4.0' ],
+215 silly audit   'js-tokens': [ '4.0.0' ],
+215 silly audit   scheduler: [ '0.23.2' ],
+215 silly audit   esbuild: [ '0.21.5' ],
+215 silly audit   '@esbuild/aix-ppc64': [ '0.21.5' ],
+215 silly audit   '@esbuild/android-arm': [ '0.21.5' ],
+215 silly audit   '@esbuild/android-arm64': [ '0.21.5' ],
+215 silly audit   '@esbuild/android-x64': [ '0.21.5' ],
+215 silly audit   '@esbuild/darwin-arm64': [ '0.21.5' ],
+215 silly audit   '@esbuild/darwin-x64': [ '0.21.5' ],
+215 silly audit   '@esbuild/freebsd-arm64': [ '0.21.5' ],
+215 silly audit   '@esbuild/freebsd-x64': [ '0.21.5' ],
+215 silly audit   '@esbuild/linux-arm': [ '0.21.5' ],
+215 silly audit   '@esbuild/linux-arm64': [ '0.21.5' ],
+215 silly audit   '@esbuild/linux-ia32': [ '0.21.5' ],
+215 silly audit   '@esbuild/linux-loong64': [ '0.21.5' ],
+215 silly audit   '@esbuild/linux-mips64el': [ '0.21.5' ],
+215 silly audit   '@esbuild/linux-ppc64': [ '0.21.5' ],
+215 silly audit   '@esbuild/linux-riscv64': [ '0.21.5' ],
+215 silly audit   '@esbuild/linux-s390x': [ '0.21.5' ],
+215 silly audit   '@esbuild/linux-x64': [ '0.21.5' ],
+215 silly audit   '@esbuild/netbsd-x64': [ '0.21.5' ],
+215 silly audit   '@esbuild/openbsd-x64': [ '0.21.5' ],
+215 silly audit   '@esbuild/sunos-x64': [ '0.21.5' ],
+215 silly audit   '@esbuild/win32-arm64': [ '0.21.5' ],
+215 silly audit   '@esbuild/win32-ia32': [ '0.21.5' ],
+215 silly audit   '@esbuild/win32-x64': [ '0.21.5' ]
+215 silly audit }
+216 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\win32-ia32
+217 silly reify mark deleted [
+217 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\win32-ia32'
+217 silly reify ]
+218 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\win32-arm64
+219 silly reify mark deleted [
+219 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\win32-arm64'
+219 silly reify ]
+220 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\sunos-x64
+221 silly reify mark deleted [
+221 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\sunos-x64'
+221 silly reify ]
+222 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\openbsd-x64
+223 silly reify mark deleted [
+223 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\openbsd-x64'
+223 silly reify ]
+224 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\netbsd-x64
+225 silly reify mark deleted [
+225 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\netbsd-x64'
+225 silly reify ]
+226 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\linux-x64
+227 silly reify mark deleted [
+227 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\linux-x64'
+227 silly reify ]
+228 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\linux-s390x
+229 silly reify mark deleted [
+229 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\linux-s390x'
+229 silly reify ]
+230 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\linux-riscv64
+231 silly reify mark deleted [
+231 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\linux-riscv64'
+231 silly reify ]
+232 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\linux-ppc64
+233 silly reify mark deleted [
+233 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\linux-ppc64'
+233 silly reify ]
+234 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\linux-mips64el
+235 silly reify mark deleted [
+235 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\linux-mips64el'
+235 silly reify ]
+236 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\linux-loong64
+237 silly reify mark deleted [
+237 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\linux-loong64'
+237 silly reify ]
+238 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\linux-ia32
+239 silly reify mark deleted [
+239 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\linux-ia32'
+239 silly reify ]
+240 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\linux-arm64
+241 silly reify mark deleted [
+241 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\linux-arm64'
+241 silly reify ]
+242 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\linux-arm
+243 silly reify mark deleted [
+243 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\linux-arm'
+243 silly reify ]
+244 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\freebsd-x64
+245 silly reify mark deleted [
+245 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\freebsd-x64'
+245 silly reify ]
+246 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\freebsd-arm64
+247 silly reify mark deleted [
+247 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\freebsd-arm64'
+247 silly reify ]
+248 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\darwin-x64
+249 silly reify mark deleted [
+249 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\darwin-x64'
+249 silly reify ]
+250 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\darwin-arm64
+251 silly reify mark deleted [
+251 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\darwin-arm64'
+251 silly reify ]
+252 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\android-x64
+253 silly reify mark deleted [
+253 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\android-x64'
+253 silly reify ]
+254 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\android-arm64
+255 silly reify mark deleted [
+255 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\android-arm64'
+255 silly reify ]
+256 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\android-arm
+257 silly reify mark deleted [
+257 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\android-arm'
+257 silly reify ]
+258 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\aix-ppc64
+259 silly reify mark deleted [
+259 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\aix-ppc64'
+259 silly reify ]
+260 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\fsevents
+261 silly reify mark deleted [
+261 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\fsevents'
+261 silly reify ]
+262 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-win32-ia32-msvc
+263 silly reify mark deleted [
+263 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-win32-ia32-msvc'
+263 silly reify ]
+264 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-win32-arm64-msvc
+265 silly reify mark deleted [
+265 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-win32-arm64-msvc'
+265 silly reify ]
+266 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-openharmony-arm64
+267 silly reify mark deleted [
+267 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-openharmony-arm64'
+267 silly reify ]
+268 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-openbsd-x64
+269 silly reify mark deleted [
+269 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-openbsd-x64'
+269 silly reify ]
+270 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-x64-musl
+271 silly reify mark deleted [
+271 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-x64-musl'
+271 silly reify ]
+272 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-x64-gnu
+273 silly reify mark deleted [
+273 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-x64-gnu'
+273 silly reify ]
+274 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-s390x-gnu
+275 silly reify mark deleted [
+275 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-s390x-gnu'
+275 silly reify ]
+276 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-riscv64-musl
+277 silly reify mark deleted [
+277 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-riscv64-musl'
+277 silly reify ]
+278 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-riscv64-gnu
+279 silly reify mark deleted [
+279 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-riscv64-gnu'
+279 silly reify ]
+280 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-ppc64-musl
+281 silly reify mark deleted [
+281 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-ppc64-musl'
+281 silly reify ]
+282 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-ppc64-gnu
+283 silly reify mark deleted [
+283 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-ppc64-gnu'
+283 silly reify ]
+284 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-loong64-musl
+285 silly reify mark deleted [
+285 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-loong64-musl'
+285 silly reify ]
+286 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-loong64-gnu
+287 silly reify mark deleted [
+287 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-loong64-gnu'
+287 silly reify ]
+288 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-arm64-musl
+289 silly reify mark deleted [
+289 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-arm64-musl'
+289 silly reify ]
+290 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-arm64-gnu
+291 silly reify mark deleted [
+291 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-arm64-gnu'
+291 silly reify ]
+292 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-arm-musleabihf
+293 silly reify mark deleted [
+293 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-arm-musleabihf'
+293 silly reify ]
+294 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-linux-arm-gnueabihf
+295 silly reify mark deleted [
+295 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-linux-arm-gnueabihf'
+295 silly reify ]
+296 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-freebsd-x64
+297 silly reify mark deleted [
+297 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-freebsd-x64'
+297 silly reify ]
+298 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-freebsd-arm64
+299 silly reify mark deleted [
+299 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-freebsd-arm64'
+299 silly reify ]
+300 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-darwin-x64
+301 silly reify mark deleted [
+301 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-darwin-x64'
+301 silly reify ]
+302 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-darwin-arm64
+303 silly reify mark deleted [
+303 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-darwin-arm64'
+303 silly reify ]
+304 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-android-arm64
+305 silly reify mark deleted [
+305 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-android-arm64'
+305 silly reify ]
+306 verbose reify failed optional dependency C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@rollup\rollup-android-arm-eabi
+307 silly reify mark deleted [
+307 silly reify   'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@rollup\\rollup-android-arm-eabi'
+307 silly reify ]
+308 http cache js-tokens@https://registry.npmjs.org/js-tokens/-/js-tokens-4.0.0.tgz 1ms (cache hit)
+309 http cache react-dom@https://registry.npmjs.org/react-dom/-/react-dom-18.3.1.tgz 0ms (cache hit)
+310 http cache loose-envify@https://registry.npmjs.org/loose-envify/-/loose-envify-1.4.0.tgz 0ms (cache hit)
+311 http cache vite@https://registry.npmjs.org/vite/-/vite-5.4.21.tgz 0ms (cache hit)
+312 http cache @esbuild/win32-x64@https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.21.5.tgz 0ms (cache hit)
+313 silly tarball no local data for js-tokens@https://registry.npmjs.org/js-tokens/-/js-tokens-4.0.0.tgz. Extracting by manifest.
+314 silly tarball no local data for react-dom@https://registry.npmjs.org/react-dom/-/react-dom-18.3.1.tgz. Extracting by manifest.
+315 silly tarball no local data for loose-envify@https://registry.npmjs.org/loose-envify/-/loose-envify-1.4.0.tgz. Extracting by manifest.
+316 silly tarball no local data for vite@https://registry.npmjs.org/vite/-/vite-5.4.21.tgz. Extracting by manifest.
+317 silly tarball no local data for @esbuild/win32-x64@https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.21.5.tgz. Extracting by manifest.
+318 http cache scheduler@https://registry.npmjs.org/scheduler/-/scheduler-0.23.2.tgz 0ms (cache hit)
+319 http cache react@https://registry.npmjs.org/react/-/react-18.3.1.tgz 0ms (cache hit)
+320 http cache esbuild@https://registry.npmjs.org/esbuild/-/esbuild-0.21.5.tgz 0ms (cache hit)
+321 silly tarball no local data for scheduler@https://registry.npmjs.org/scheduler/-/scheduler-0.23.2.tgz. Extracting by manifest.
+322 silly tarball no local data for react@https://registry.npmjs.org/react/-/react-18.3.1.tgz. Extracting by manifest.
+323 silly tarball no local data for esbuild@https://registry.npmjs.org/esbuild/-/esbuild-0.21.5.tgz. Extracting by manifest.
+324 http fetch GET 200 https://registry.npmjs.org/loose-envify/-/loose-envify-1.4.0.tgz 99ms (cache miss)
+325 http fetch GET 200 https://registry.npmjs.org/js-tokens/-/js-tokens-4.0.0.tgz 102ms (cache miss)
+326 http fetch GET 200 https://registry.npmjs.org/scheduler/-/scheduler-0.23.2.tgz 134ms (cache miss)
+327 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 245ms
+328 silly audit report {
+328 silly audit report   vite: [
+328 silly audit report     {
+328 silly audit report       id: 1116229,
+328 silly audit report       url: 'https://github.com/advisories/GHSA-4w7w-66w2-5vf9',
+328 silly audit report       title: 'Vite Vulnerable to Path Traversal in Optimized Deps `.map` Handling',
+328 silly audit report       severity: 'moderate',
+328 silly audit report       vulnerable_versions: '<=6.4.1',
+328 silly audit report       cwe: [Array],
+328 silly audit report       cvss: [Object]
+328 silly audit report     }
+328 silly audit report   ],
+328 silly audit report   esbuild: [
+328 silly audit report     {
+328 silly audit report       id: 1102341,
+328 silly audit report       url: 'https://github.com/advisories/GHSA-67mh-4wv8-2f99',
+328 silly audit report       title: 'esbuild enables any website to send any requests to the development server and read the response',
+328 silly audit report       severity: 'moderate',
+328 silly audit report       vulnerable_versions: '<=0.24.2',
+328 silly audit report       cwe: [Array],
+328 silly audit report       cvss: [Object]
+328 silly audit report     }
+328 silly audit report   ]
+328 silly audit report }
+329 silly packumentCache corgi:https://registry.npmjs.org/vite cache-miss
+330 silly packumentCache corgi:https://registry.npmjs.org/esbuild cache-miss
+331 http fetch GET 200 https://registry.npmjs.org/esbuild/-/esbuild-0.21.5.tgz 250ms (cache miss)
+332 http fetch GET 200 https://registry.npmjs.org/react/-/react-18.3.1.tgz 289ms (cache miss)
+333 http fetch GET 200 https://registry.npmjs.org/vite/-/vite-5.4.21.tgz 351ms (cache miss)
+334 http fetch GET 200 https://registry.npmjs.org/esbuild 184ms (cache miss)
+335 silly packumentCache corgi:https://registry.npmjs.org/esbuild set size:undefined disposed:false
+336 http fetch GET 200 https://registry.npmjs.org/vite 255ms (cache miss)
+337 silly packumentCache corgi:https://registry.npmjs.org/vite set size:undefined disposed:false
+338 http fetch GET 200 https://registry.npmjs.org/react-dom/-/react-dom-18.3.1.tgz 631ms (cache miss)
+339 http fetch GET 200 https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.21.5.tgz 699ms (cache miss)
+340 info run esbuild@0.21.5 postinstall node_modules/esbuild node install.js
+341 info run esbuild@0.21.5 postinstall { code: 0, signal: null }
+342 warn cleanup Failed to remove some directories [
+342 warn cleanup   [
+342 warn cleanup     'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\.win32-x64-acSe68Q7',
+342 warn cleanup     [Error: EPERM: operation not permitted, unlink 'C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\node_modules\@esbuild\.win32-x64-acSe68Q7\esbuild.exe'] {
+342 warn cleanup       errno: -4048,
+342 warn cleanup       code: 'EPERM',
+342 warn cleanup       syscall: 'unlink',
+342 warn cleanup       path: 'C:\\Users\\User\\OneDrive\\Desktop\\grafika\\Ukrstene reci\\node_modules\\@esbuild\\.win32-x64-acSe68Q7\\esbuild.exe'
+342 warn cleanup     }
+342 warn cleanup   ]
+342 warn cleanup ]
+343 silly ADD
+344 silly ADD
+345 silly ADD
+346 silly ADD
+347 silly ADD
+348 silly ADD
+349 silly ADD
+350 silly ADD
+351 silly ADD
+352 silly ADD
+353 silly ADD
+354 silly ADD
+355 silly ADD
+356 silly ADD
+357 silly ADD
+358 silly ADD
+359 silly ADD
+360 silly ADD
+361 silly ADD
+362 silly ADD
+363 silly ADD
+364 silly ADD
+365 silly ADD node_modules/js-tokens
+366 silly ADD node_modules/loose-envify
+367 silly ADD
+368 silly ADD
+369 silly ADD
+370 silly ADD
+371 silly ADD
+372 silly ADD
+373 silly ADD
+374 silly ADD
+375 silly ADD
+376 silly ADD
+377 silly ADD
+378 silly ADD
+379 silly ADD
+380 silly ADD
+381 silly ADD
+382 silly ADD
+383 silly ADD
+384 silly ADD
+385 silly ADD
+386 silly ADD
+387 silly ADD
+388 silly ADD
+389 silly ADD
+390 silly ADD
+391 silly CHANGE node_modules/vite
+392 silly REMOVE node_modules/tinyglobby
+393 silly CHANGE node_modules/scheduler
+394 silly CHANGE node_modules/react-dom
+395 silly CHANGE node_modules/react
+396 silly REMOVE node_modules/picomatch
+397 silly REMOVE node_modules/fdir
+398 silly CHANGE node_modules/esbuild
+399 silly CHANGE node_modules/@esbuild/win32-x64
+400 verbose cwd C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci
+401 verbose os Windows_NT 10.0.26200
+402 verbose node v22.18.0
+403 verbose npm  v10.9.3
+404 notice
+404 notice New major version of npm available! 10.9.3 -> 11.15.0
+404 notice Changelog: https://github.com/npm/cli/releases/tag/v11.15.0
+404 notice To update run: npm install -g npm@11.15.0
+404 notice  { force: true, [Symbol(proc-log.meta)]: true }
+405 verbose exit 0
+406 info ok

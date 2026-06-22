@@ -1,0 +1,115 @@
+CREATE DATABASE IF NOT EXISTS ukrstene_reci CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE ukrstene_reci;
+
+CREATE TABLE IF NOT EXISTS korisnik (
+  ID INT PRIMARY KEY AUTO_INCREMENT,
+  KorisnickoIme VARCHAR(60) NOT NULL UNIQUE,
+  Ime VARCHAR(80) NOT NULL,
+  Prezime VARCHAR(80) NULL,
+  Email VARCHAR(120) NOT NULL UNIQUE,
+  LozinkaHash VARCHAR(220) NOT NULL,
+  AvatarBoja VARCHAR(20) NOT NULL DEFAULT '#00e5b4',
+  UkupnoPobjeda INT NOT NULL DEFAULT 0,
+  UkupnoPoraza INT NOT NULL DEFAULT 0,
+  Kreiran DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS tema (
+  ID VARCHAR(60) PRIMARY KEY,
+  Naziv VARCHAR(100) NOT NULL,
+  Staticka TINYINT(1) NOT NULL DEFAULT 1,
+  KreiraoKorisnik_ID INT NULL,
+  Kreirana DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_tema_korisnik FOREIGN KEY (KreiraoKorisnik_ID) REFERENCES korisnik(ID) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS tema_rijec (
+  ID INT PRIMARY KEY AUTO_INCREMENT,
+  Tema_ID VARCHAR(60) NULL,
+  CustomTema VARCHAR(120) NULL,
+  RijeciJson JSON NULL,
+  Rijec VARCHAR(30) NOT NULL,
+  Tezina VARCHAR(20) NOT NULL DEFAULT 'sve',
+  Kreirana DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_tema_rijec (Tema_ID, Rijec),
+  CONSTRAINT fk_rijec_tema FOREIGN KEY (Tema_ID) REFERENCES tema(ID) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS prijateljstvo (
+  ID INT PRIMARY KEY AUTO_INCREMENT,
+  Posiljalac_ID INT NOT NULL,
+  Primalac_ID INT NOT NULL,
+  Status ENUM('na_cekanju','prihvaceno','odbijeno','blokirano') NOT NULL DEFAULT 'na_cekanju',
+  Kreirano DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  Azurirano DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_prijateljstvo (Posiljalac_ID, Primalac_ID),
+  CONSTRAINT fk_prijatelj_posiljalac FOREIGN KEY (Posiljalac_ID) REFERENCES korisnik(ID) ON DELETE CASCADE,
+  CONSTRAINT fk_prijatelj_primalac FOREIGN KEY (Primalac_ID) REFERENCES korisnik(ID) ON DELETE CASCADE,
+  CONSTRAINT chk_prijateljstvo_razliciti CHECK (Posiljalac_ID <> Primalac_ID)
+);
+
+CREATE TABLE IF NOT EXISTS izazov (
+  ID INT PRIMARY KEY AUTO_INCREMENT,
+  Izazivac_ID INT NOT NULL,
+  Protivnik_ID INT NOT NULL,
+  Tema_ID VARCHAR(60) NULL,
+  CustomTema VARCHAR(120) NULL,
+  RijeciJson JSON NULL,
+  Tezina VARCHAR(20) NOT NULL,
+  BrojRijeci INT NOT NULL,
+  VelicinaMatrice INT NOT NULL,
+  VremenskoOgranicenjeSekundi INT NOT NULL DEFAULT 300,
+  Status ENUM('na_cekanju','prihvacen','odbijen','otkazan','istekao') NOT NULL DEFAULT 'na_cekanju',
+  Kreiran DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  Odgovoren DATETIME NULL,
+  CONSTRAINT fk_izazov_izazivac FOREIGN KEY (Izazivac_ID) REFERENCES korisnik(ID) ON DELETE CASCADE,
+  CONSTRAINT fk_izazov_protivnik FOREIGN KEY (Protivnik_ID) REFERENCES korisnik(ID) ON DELETE CASCADE,
+  CONSTRAINT fk_izazov_tema FOREIGN KEY (Tema_ID) REFERENCES tema(ID),
+  CONSTRAINT chk_izazov_razliciti CHECK (Izazivac_ID <> Protivnik_ID)
+);
+
+CREATE TABLE IF NOT EXISTS mec (
+  ID INT PRIMARY KEY AUTO_INCREMENT,
+  Izazov_ID INT NOT NULL UNIQUE,
+  Tema_ID VARCHAR(60) NULL,
+  CustomTema VARCHAR(120) NULL,
+  RijeciJson JSON NULL,
+  Tezina VARCHAR(20) NOT NULL,
+  BrojRijeci INT NOT NULL,
+  VelicinaMatrice INT NOT NULL,
+  VremenskoOgranicenjeSekundi INT NOT NULL,
+  Status ENUM('spreman','aktivan','zavrsen') NOT NULL DEFAULT 'aktivan',
+  Pobjednik_ID INT NULL,
+  RazlogZavrsetka VARCHAR(30) NULL,
+  Napustio_ID INT NULL,
+  Zapocet DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  Zavrsen DATETIME NULL,
+  CONSTRAINT fk_mec_izazov FOREIGN KEY (Izazov_ID) REFERENCES izazov(ID) ON DELETE CASCADE,
+  CONSTRAINT fk_mec_tema FOREIGN KEY (Tema_ID) REFERENCES tema(ID),
+  CONSTRAINT fk_mec_pobjednik FOREIGN KEY (Pobjednik_ID) REFERENCES korisnik(ID) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS mec_igrac (
+  ID INT PRIMARY KEY AUTO_INCREMENT,
+  Mec_ID INT NOT NULL,
+  Korisnik_ID INT NOT NULL,
+  PronadjeneRijeciJson JSON NOT NULL,
+  BrojPronadjenih INT NOT NULL DEFAULT 0,
+  VrijemeSekundi INT NOT NULL DEFAULT 0,
+  Zavrsio TINYINT(1) NOT NULL DEFAULT 0,
+  Azurirano DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_mec_igrac (Mec_ID, Korisnik_ID),
+  CONSTRAINT fk_mec_igrac_mec FOREIGN KEY (Mec_ID) REFERENCES mec(ID) ON DELETE CASCADE,
+  CONSTRAINT fk_mec_igrac_korisnik FOREIGN KEY (Korisnik_ID) REFERENCES korisnik(ID) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS tema_predlog (
+  ID INT PRIMARY KEY AUTO_INCREMENT,
+  Naziv VARCHAR(100) NOT NULL,
+  RijeciJson JSON NOT NULL,
+  PredlozioKorisnik_ID INT NOT NULL,
+  Status ENUM('na_cekanju','odobrena','odbijena') NOT NULL DEFAULT 'na_cekanju',
+  Kreirana DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  Odgovorena DATETIME NULL,
+  CONSTRAINT fk_tema_predlog_korisnik FOREIGN KEY (PredlozioKorisnik_ID) REFERENCES korisnik(ID) ON DELETE CASCADE
+);

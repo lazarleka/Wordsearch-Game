@@ -1,0 +1,91 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@10.9.3
+2 info using node@v22.18.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\.npmrc
+5 silly config load:file:C:\Users\User\.npmrc
+6 silly config load:file:C:\Users\User\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm audit
+8 verbose argv "--strict-ssl" "false" "--cache" ".npm-cache" "audit" "--omit" "dev"
+9 verbose logfile logs-max:10 dir:C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\.npm-cache\_logs\2026-05-23T20_49_30_796Z-
+10 verbose logfile C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci\.npm-cache\_logs\2026-05-23T20_49_30_796Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+13 silly audit bulk request {
+13 silly audit   '@esbuild/aix-ppc64': [ '0.25.12' ],
+13 silly audit   '@esbuild/android-arm': [ '0.25.12' ],
+13 silly audit   '@esbuild/android-arm64': [ '0.25.12' ],
+13 silly audit   '@esbuild/android-x64': [ '0.25.12' ],
+13 silly audit   '@esbuild/darwin-arm64': [ '0.25.12' ],
+13 silly audit   '@esbuild/darwin-x64': [ '0.25.12' ],
+13 silly audit   '@esbuild/freebsd-arm64': [ '0.25.12' ],
+13 silly audit   '@esbuild/freebsd-x64': [ '0.25.12' ],
+13 silly audit   '@esbuild/linux-arm': [ '0.25.12' ],
+13 silly audit   '@esbuild/linux-arm64': [ '0.25.12' ],
+13 silly audit   '@esbuild/linux-ia32': [ '0.25.12' ],
+13 silly audit   '@esbuild/linux-loong64': [ '0.25.12' ],
+13 silly audit   '@esbuild/linux-mips64el': [ '0.25.12' ],
+13 silly audit   '@esbuild/linux-ppc64': [ '0.25.12' ],
+13 silly audit   '@esbuild/linux-riscv64': [ '0.25.12' ],
+13 silly audit   '@esbuild/linux-s390x': [ '0.25.12' ],
+13 silly audit   '@esbuild/linux-x64': [ '0.25.12' ],
+13 silly audit   '@esbuild/netbsd-arm64': [ '0.25.12' ],
+13 silly audit   '@esbuild/netbsd-x64': [ '0.25.12' ],
+13 silly audit   '@esbuild/openbsd-arm64': [ '0.25.12' ],
+13 silly audit   '@esbuild/openbsd-x64': [ '0.25.12' ],
+13 silly audit   '@esbuild/openharmony-arm64': [ '0.25.12' ],
+13 silly audit   '@esbuild/sunos-x64': [ '0.25.12' ],
+13 silly audit   '@esbuild/win32-arm64': [ '0.25.12' ],
+13 silly audit   '@esbuild/win32-ia32': [ '0.25.12' ],
+13 silly audit   '@esbuild/win32-x64': [ '0.25.12' ],
+13 silly audit   '@rollup/rollup-android-arm-eabi': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-android-arm64': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-darwin-arm64': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-darwin-x64': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-freebsd-arm64': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-freebsd-x64': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-linux-arm-gnueabihf': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-linux-arm-musleabihf': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-linux-arm64-gnu': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-linux-arm64-musl': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-linux-loong64-gnu': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-linux-loong64-musl': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-linux-ppc64-gnu': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-linux-ppc64-musl': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-linux-riscv64-gnu': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-linux-riscv64-musl': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-linux-s390x-gnu': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-linux-x64-gnu': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-linux-x64-musl': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-openbsd-x64': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-openharmony-arm64': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-win32-arm64-msvc': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-win32-ia32-msvc': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-win32-x64-gnu': [ '4.60.4' ],
+13 silly audit   '@rollup/rollup-win32-x64-msvc': [ '4.60.4' ],
+13 silly audit   '@types/estree': [ '1.0.8' ],
+13 silly audit   esbuild: [ '0.25.12' ],
+13 silly audit   fdir: [ '6.5.0' ],
+13 silly audit   fsevents: [ '2.3.3' ],
+13 silly audit   'js-tokens': [ '4.0.0' ],
+13 silly audit   'loose-envify': [ '1.4.0' ],
+13 silly audit   nanoid: [ '3.3.12' ],
+13 silly audit   picocolors: [ '1.1.1' ],
+13 silly audit   picomatch: [ '4.0.4' ],
+13 silly audit   postcss: [ '8.5.15' ],
+13 silly audit   react: [ '18.3.1' ],
+13 silly audit   'react-dom': [ '18.3.1' ],
+13 silly audit   rollup: [ '4.60.4' ],
+13 silly audit   scheduler: [ '0.23.2' ],
+13 silly audit   'source-map-js': [ '1.2.1' ],
+13 silly audit   tinyglobby: [ '0.2.16' ],
+13 silly audit   vite: [ '6.4.2' ]
+13 silly audit }
+14 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 404ms
+15 silly audit report {}
+16 verbose cwd C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci
+17 verbose os Windows_NT 10.0.26200
+18 verbose node v22.18.0
+19 verbose npm  v10.9.3
+20 verbose exit 0
+21 info ok
