@@ -48,4 +48,9 @@ public class FriendController {
     public ResponseEntity<?> friendships(@PathVariable int id) {
         return ResponseEntity.ok(gameService.getFriendships(id));
     }
+
+    @GetMapping(value = "/users/{id}/friends-page")
+    public ResponseEntity<?> friendsPage(@PathVariable int id) {
+        return ResponseEntity.ok(gameService.getFriendsPage(id));
+    }
 }

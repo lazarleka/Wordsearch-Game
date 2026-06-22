@@ -60,6 +60,10 @@ export function getFriendships(userId) {
   return getJson(`/users/${userId}/friendships`);
 }
 
+export function getFriendsPage(userId) {
+  return getJson(`/users/${userId}/friends-page`);
+}
+
 export function requestFriend(fromUserId, toUserId) {
   return sendJson(API_URL, '/friends/request', { fromUserId, toUserId });
 }

@@ -24,8 +24,7 @@ import {
   forfeitMatch,
   getActiveMatch,
   getChallenges,
-  getFriends,
-  getFriendships,
+  getFriendsPage,
   getLeaderboard,
   getMatchResult,
   getMatchHistory,
@@ -34,7 +33,6 @@ import {
   rejectChallenge,
   registerUser,
   requestFriend,
-  searchUsers,
   updateMatchProgress,
 } from './api.js';
 import { DIFFICULTIES, THEMES } from './data.js';
@@ -139,6 +137,7 @@ function App() {
   const [challengeClock, setChallengeClock] = useState(Date.now());
   const [challengeDeadline, setChallengeDeadline] = useState(0);
   const [challengeSending, setChallengeSending] = useState(false);
+  const [friendActionId, setFriendActionId] = useState(null);
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const [confirmExit, setConfirmExit] = useState(false);
   const [socialReady, setSocialReady] = useState(false);
@@ -231,10 +230,8 @@ function App() {
 
   const refreshSocial = useCallback(async () => {
     if (!user) return;
-    const [friends, friendships, allUsers, challenges, outgoingChallenges, currentMatch, leaderboard, history] = await Promise.all([
-      getFriends(entityId(user)),
-      getFriendships(entityId(user)),
-      searchUsers(''),
+    const [friendsPage, challenges, outgoingChallenges, currentMatch, leaderboard, history] = await Promise.all([
+      getFriendsPage(entityId(user)),
       getChallenges(entityId(user)),
       getOutgoingChallenges(entityId(user)),
       getActiveMatch(entityId(user)),
@@ -242,8 +239,28 @@ function App() {
       getMatchHistory(entityId(user)),
     ]);
     setChallengeClock(Date.now());
-    setSocial({ friends, friendships, allUsers, challenges, outgoingChallenges, activeMatch: currentMatch, leaderboard, history });
+    setSocial({
+      friends: friendsPage.friends || [],
+      friendships: friendsPage.friendships || [],
+      allUsers: friendsPage.users || [],
+      challenges,
+      outgoingChallenges,
+      activeMatch: currentMatch,
+      leaderboard,
+      history,
+    });
     setSocialReady(true);
+  }, [user]);
+
+  const refreshFriendsPage = useCallback(async () => {
+    if (!user) return;
+    const friendsPage = await getFriendsPage(entityId(user));
+    setSocial((current) => ({
+      ...current,
+      friends: friendsPage.friends || [],
+      friendships: friendsPage.friendships || [],
+      allUsers: friendsPage.users || [],
+    }));
   }, [user]);
 
   const refreshLiveSocial = useCallback(async () => {
@@ -322,13 +339,64 @@ function App() {
         if (message.type === 'match_finished' && entityId(activeMatch) === Number(message.payload?.matchId)) {
           showVersusResult(message.payload);
         }
+        if (message.type === 'friend_request_created' || message.type === 'friend_request_accepted') {
+          refreshFriendsPage();
+        }
       } catch {
         // A refresh still keeps the social views in sync.
       }
       refreshLiveSocial();
     };
     return () => socket.close();
-  }, [activeMatch, mode, outgoingChallenge, refreshLiveSocial, user]);
+  }, [activeMatch, mode, outgoingChallenge, refreshFriendsPage, refreshLiveSocial, user]);
+
+  async function handleAcceptFriend(friendshipId) {
+    setFriendActionId(`accept-${friendshipId}`);
+    setError('');
+    try {
+      await acceptFriend(friendshipId);
+      setSocial((current) => ({
+        ...current,
+        friendships: current.friendships.map((item) => (
+          Number(item.ID) === Number(friendshipId) ? { ...item, Status: 'prihvaceno' } : item
+        )),
+      }));
+      await refreshFriendsPage();
+    } catch (err) {
+      setError(err.message || 'Zahtjev nije moguće prihvatiti.');
+    } finally {
+      setFriendActionId(null);
+    }
+  }
+
+  async function handleRequestFriend(registeredUser) {
+    const targetId = entityId(registeredUser);
+    setFriendActionId(`request-${targetId}`);
+    setError('');
+    try {
+      const created = await requestFriend(entityId(user), targetId);
+      setSocial((current) => ({
+        ...current,
+        friendships: [
+          {
+            ...created,
+            DrugiKorisnik_ID: targetId,
+            DrugiKorisnickoIme: registeredUser.korisnickoIme,
+            DrugiIme: registeredUser.ime,
+            Posiljalac_ID: entityId(user),
+            Primalac_ID: targetId,
+            Status: 'na_cekanju',
+          },
+          ...current.friendships.filter((item) => Number(item.DrugiKorisnik_ID) !== Number(targetId)),
+        ],
+      }));
+      refreshFriendsPage().catch(() => null);
+    } catch (err) {
+      setError(err.message || 'Zahtjev nije poslat.');
+    } finally {
+      setFriendActionId(null);
+    }
+  }
 
   useEffect(() => {
     const currentMatch = social.activeMatch;
@@ -869,6 +937,7 @@ function App() {
                   setError('');
                   setNotice('');
                   if (id === 'challenges') setDismissedChallengeId(null);
+                  if (id === 'friends') refreshFriendsPage().catch(() => null);
                 }}
               >
                 <Icon size={18} />
@@ -1007,7 +1076,7 @@ function App() {
                         <div className="data-row" key={request.ID}>
                           <div className="avatar">{request.DrugiKorisnickoIme?.slice(0, 1).toUpperCase()}</div>
                           <div className="row-copy"><strong>{request.DrugiKorisnickoIme}</strong><span>Želi da vas doda za prijatelja</span></div>
-                          <button className="row-action accent" type="button" onClick={() => acceptFriend(request.ID).then(refreshSocial)}><Check size={17} />Prihvati</button>
+                          <button className="row-action accent" type="button" disabled={friendActionId === `accept-${request.ID}`} onClick={() => handleAcceptFriend(request.ID)}><Check size={17} />{friendActionId === `accept-${request.ID}` ? 'Prihvatam...' : 'Prihvati'}</button>
                         </div>
                       ))}
                     </div>
@@ -1044,8 +1113,8 @@ function App() {
                             </div>
                             {isFriend && <span className="relationship-status friend"><Check size={15} />Prijatelj</span>}
                             {isOutgoing && <span className="relationship-status pending">Zahtjev poslat</span>}
-                            {isIncoming && <button className="row-action accent" type="button" onClick={() => acceptFriend(connection.ID).then(refreshSocial)}><Check size={17} />Prihvati</button>}
-                            {!connection && <button className="row-action" type="button" onClick={() => requestFriend(entityId(user), entityId(registeredUser)).then(refreshSocial)}><UserPlus size={17} />Dodaj</button>}
+                            {isIncoming && <button className="row-action accent" type="button" disabled={friendActionId === `accept-${connection.ID}`} onClick={() => handleAcceptFriend(connection.ID)}><Check size={17} />{friendActionId === `accept-${connection.ID}` ? 'Prihvatam...' : 'Prihvati'}</button>}
+                            {!connection && <button className="row-action" type="button" disabled={friendActionId === `request-${entityId(registeredUser)}`} onClick={() => handleRequestFriend(registeredUser)}><UserPlus size={17} />{friendActionId === `request-${entityId(registeredUser)}` ? 'Šaljem...' : 'Dodaj'}</button>}
                           </div>
                         );
                       })}

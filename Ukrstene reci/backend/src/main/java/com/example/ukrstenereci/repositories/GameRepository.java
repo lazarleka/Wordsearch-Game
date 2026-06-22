@@ -101,15 +101,62 @@ public class GameRepository {
     public List<Korisnik> getFriends(int userId) {
         List<Korisnik> result = new ArrayList<>();
         try (Connection conn = DBUtil.open()) {
-            PreparedStatement ps = conn.prepareStatement("SELECT CASE WHEN Posiljalac_ID=? THEN Primalac_ID ELSE Posiljalac_ID END AS Friend_ID FROM prijateljstvo WHERE Status='prihvaceno' AND (Posiljalac_ID=? OR Primalac_ID=?)");
+            PreparedStatement ps = conn.prepareStatement(
+                    "SELECT k.* FROM prijateljstvo f " +
+                    "JOIN korisnik k ON k.ID=CASE WHEN f.Posiljalac_ID=? THEN f.Primalac_ID ELSE f.Posiljalac_ID END " +
+                    "WHERE f.Status='prihvaceno' AND (f.Posiljalac_ID=? OR f.Primalac_ID=?) " +
+                    "ORDER BY k.KorisnickoIme");
             ps.setInt(1, userId);
             ps.setInt(2, userId);
             ps.setInt(3, userId);
             ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                Korisnik k = authRepository.findById(rs.getInt("Friend_ID"));
-                if (k != null) result.add(k);
-            }
+            while (rs.next()) result.add(mapUser(rs));
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+        return result;
+    }
+
+    public Map<String, Object> getFriendsPage(int userId) {
+        Map<String, Object> result = new HashMap<>();
+        List<Korisnik> friends = new ArrayList<>();
+        List<Map<String, Object>> friendships = new ArrayList<>();
+        List<Korisnik> users = new ArrayList<>();
+        try (Connection conn = DBUtil.open()) {
+            PreparedStatement friendsPs = conn.prepareStatement(
+                    "SELECT k.* FROM prijateljstvo f " +
+                    "JOIN korisnik k ON k.ID=CASE WHEN f.Posiljalac_ID=? THEN f.Primalac_ID ELSE f.Posiljalac_ID END " +
+                    "WHERE f.Status='prihvaceno' AND (f.Posiljalac_ID=? OR f.Primalac_ID=?) " +
+                    "ORDER BY k.KorisnickoIme");
+            friendsPs.setInt(1, userId);
+            friendsPs.setInt(2, userId);
+            friendsPs.setInt(3, userId);
+            ResultSet friendsRs = friendsPs.executeQuery();
+            while (friendsRs.next()) friends.add(mapUser(friendsRs));
+
+            PreparedStatement friendshipsPs = conn.prepareStatement(
+                    "SELECT f.*, " +
+                    "CASE WHEN f.Posiljalac_ID=? THEN f.Primalac_ID ELSE f.Posiljalac_ID END AS DrugiKorisnik_ID, " +
+                    "k.KorisnickoIme AS DrugiKorisnickoIme, k.Ime AS DrugiIme " +
+                    "FROM prijateljstvo f " +
+                    "JOIN korisnik k ON k.ID=CASE WHEN f.Posiljalac_ID=? THEN f.Primalac_ID ELSE f.Posiljalac_ID END " +
+                    "WHERE f.Posiljalac_ID=? OR f.Primalac_ID=? ORDER BY f.Azurirano DESC");
+            friendshipsPs.setInt(1, userId);
+            friendshipsPs.setInt(2, userId);
+            friendshipsPs.setInt(3, userId);
+            friendshipsPs.setInt(4, userId);
+            ResultSet friendshipsRs = friendshipsPs.executeQuery();
+            while (friendshipsRs.next()) friendships.add(rowToMap(friendshipsRs));
+
+            PreparedStatement usersPs = conn.prepareStatement(
+                    "SELECT * FROM korisnik WHERE ID<>? ORDER BY KorisnickoIme LIMIT 100");
+            usersPs.setInt(1, userId);
+            ResultSet usersRs = usersPs.executeQuery();
+            while (usersRs.next()) users.add(mapUser(usersRs));
+
+            result.put("friends", friends);
+            result.put("friendships", friendships);
+            result.put("users", users);
         } catch (Exception e) {
             System.out.println(e);
         }
@@ -789,6 +836,19 @@ public class GameRepository {
             map.put(rs.getMetaData().getColumnLabel(i), rs.getObject(i));
         }
         return map;
+    }
+
+    private Korisnik mapUser(ResultSet rs) throws Exception {
+        Korisnik user = new Korisnik();
+        user.setID(rs.getInt("ID"));
+        user.setKorisnickoIme(rs.getString("KorisnickoIme"));
+        user.setIme(rs.getString("Ime"));
+        user.setPrezime(rs.getString("Prezime"));
+        user.setEmail(rs.getString("Email"));
+        user.setAvatarBoja(rs.getString("AvatarBoja"));
+        user.setUkupnoPobjeda(rs.getInt("UkupnoPobjeda"));
+        user.setUkupnoPoraza(rs.getInt("UkupnoPoraza"));
+        return user;
     }
 
     private String toJson(Set<String> words) {

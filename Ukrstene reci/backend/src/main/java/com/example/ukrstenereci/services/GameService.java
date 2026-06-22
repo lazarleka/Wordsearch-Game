@@ -43,6 +43,10 @@ public class GameService {
         return gameRepository.getFriendships(userId);
     }
 
+    public Map<String, Object> getFriendsPage(int userId) {
+        return gameRepository.getFriendsPage(userId);
+    }
+
     public Map<String, Object> createChallenge(ChallengeRequest request) {
         return gameRepository.createChallenge(request);
     }
