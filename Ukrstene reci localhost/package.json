@@ -1,0 +1,24 @@
+{
+  "name": "ukrstene-rijeci",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "npm run build && vite preview --configLoader native",
+    "dev:frontend": "vite --configLoader native",
+    "dev:backend": "powershell -ExecutionPolicy Bypass -File .\\start-backend-local.ps1",
+    "dev:full": "powershell -ExecutionPolicy Bypass -File .\\start-local.ps1",
+    "build": "vite build --configLoader native",
+    "preview": "vite preview --configLoader native"
+  },
+  "dependencies": {
+    "lucide-react": "^1.16.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "vite": "^8.0.14"
+  }
+}
