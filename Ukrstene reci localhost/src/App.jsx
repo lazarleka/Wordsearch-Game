@@ -42,6 +42,8 @@ import { initSound, playFailSound, playSuccessSound, playWinSound } from './soun
 
 const defaultDiff = DIFFICULTIES[0];
 const turnSeconds = 20;
+const SOLO_GAME_LIMIT_SECONDS = 300;
+const GRID_GENERATION_ATTEMPTS = 4;
 const PLAYER_COLORS = ['#ff4b6e', '#00d9b0'];
 const POINTS_PER_WORD = 100;
 const POWER_UP_PENALTY = 50;
@@ -150,12 +152,18 @@ function App() {
   const [social, setSocial] = useState({ friends: [], friendships: [], allUsers: [], challenges: [], outgoingChallenges: [], activeMatch: null, leaderboard: [], history: [] });
 
   const timerRef = useRef(null);
+  const soloLimitTimerRef = useRef(null);
   const gameStartedAtRef = useRef(null);
   const turnTimerRef = useRef(null);
   const launchingMatchRef = useRef(null);
   const liveRefreshRef = useRef(false);
   const firstLetterTimerRef = useRef(null);
   const helperPathTimerRef = useRef(null);
+  const finishingRef = useRef(false);
+  const latestFoundRef = useRef([]);
+  const latestScoresRef = useRef([0, 0]);
+  const latestElapsedRef = useRef(0);
+  const finishGameRef = useRef(null);
 
   const names = useMemo(() => {
     if (mode === 'versus') {
@@ -225,6 +233,18 @@ function App() {
     window.addEventListener('resize', updateViewport);
     return () => window.removeEventListener('resize', updateViewport);
   }, []);
+
+  useEffect(() => {
+    latestFoundRef.current = found;
+    latestScoresRef.current = scores;
+    latestElapsedRef.current = elapsed;
+  }, [elapsed, found, scores]);
+
+  useEffect(() => {
+    if (!/4 do \d+ slova|moraju imati/i.test(error)) return;
+    setError('');
+    setNotice('AI je vratio neispravne rijeci. Pokreni generisanje ponovo.');
+  }, [error]);
 
   const refreshThemes = useCallback(() => {
     fetchThemesFromDatabase()
@@ -442,6 +462,21 @@ function App() {
     timerRef.current = null;
   }, []);
 
+  const stopSoloLimitTimer = useCallback(() => {
+    window.clearTimeout(soloLimitTimerRef.current);
+    soloLimitTimerRef.current = null;
+  }, []);
+
+  const startSoloLimitTimer = useCallback((initialElapsed = 0) => {
+    stopSoloLimitTimer();
+    const remainingMs = Math.max(0, (SOLO_GAME_LIMIT_SECONDS - initialElapsed) * 1000);
+    soloLimitTimerRef.current = window.setTimeout(() => {
+      latestElapsedRef.current = SOLO_GAME_LIMIT_SECONDS;
+      setElapsed(SOLO_GAME_LIMIT_SECONDS);
+      finishGameRef.current?.(latestFoundRef.current, latestScoresRef.current);
+    }, remainingMs);
+  }, [stopSoloLimitTimer]);
+
   const showTurnPopup = useCallback((title, message) => {
     setTurnPopup({ title, message });
     window.setTimeout(() => setTurnPopup(null), 1500);
@@ -464,13 +499,16 @@ function App() {
 
   const buildResult = useCallback((nextFound = found, nextScores = scores) => {
     const finalPoints = nextFound.length * POINTS_PER_WORD - powerUpPenalty;
+    const finalElapsed = mode === 'solo'
+      ? Math.min(latestElapsedRef.current, SOLO_GAME_LIMIT_SECONDS)
+      : latestElapsedRef.current;
     if (mode === 'solo') {
       const pct = Math.round((nextFound.length / gridData.words.length) * 100) || 0;
       return {
         icon: 'WIN',
         title: `Bravo, ${names.p1}!`,
         score: `${finalPoints} bodova`,
-        message: `Pronašao/la si ${nextFound.length} od ${gridData.words.length} riječi (${pct}%) za ${formatTime(elapsed)}.\nPower-up kazna: -${powerUpPenalty} bodova.`,
+        message: `Pronašao/la si ${nextFound.length} od ${gridData.words.length} riječi (${pct}%) za ${formatTime(finalElapsed)}.\nPower-up kazna: -${powerUpPenalty} bodova.`,
       };
     }
     const winner = nextScores[0] > nextScores[1] ? names.p1 : nextScores[1] > nextScores[0] ? names.p2 : null;
@@ -478,9 +516,9 @@ function App() {
       icon: winner ? 'WIN' : 'VS',
       title: winner ? `Pobijedio/la ${winner}!` : 'Neriješeno!',
       score: `${nextScores[0]} - ${nextScores[1]}`,
-      message: `${names.p1}: ${nextScores[0]} riječi | ${names.p2}: ${nextScores[1]} riječi\nTvoji bodovi: ${finalPoints} (kazna -${powerUpPenalty})\nVrijeme: ${formatTime(elapsed)}`,
+      message: `${names.p1}: ${nextScores[0]} riječi | ${names.p2}: ${nextScores[1]} riječi\nTvoji bodovi: ${finalPoints} (kazna -${powerUpPenalty})\nVrijeme: ${formatTime(finalElapsed)}`,
     };
-  }, [elapsed, found, gridData.words.length, mode, names.p1, names.p2, powerUpPenalty, scores]);
+  }, [found, gridData.words.length, mode, names.p1, names.p2, powerUpPenalty, scores]);
 
   function showVersusResult(matchResult) {
     stopGameTimer();
@@ -531,15 +569,21 @@ function App() {
   }
 
   const finishGame = useCallback(async (nextFound = found, nextScores = scores) => {
+    if (finishingRef.current) return;
+    finishingRef.current = true;
     stopGameTimer();
     stopTurnTimer();
+    stopSoloLimitTimer();
     playWinSound();
+    const finalElapsed = mode === 'solo'
+      ? Math.min(latestElapsedRef.current, SOLO_GAME_LIMIT_SECONDS)
+      : latestElapsedRef.current;
     let versusResult = null;
     if (entityId(activeMatch) && user) {
       const progressResult = await updateMatchProgress(entityId(activeMatch), {
         userId: entityId(user),
         foundWords: nextFound,
-        elapsedSeconds: elapsed,
+        elapsedSeconds: finalElapsed,
         finished: true,
         powerUpPenalty,
         points: nextFound.length * POINTS_PER_WORD - powerUpPenalty,
@@ -556,7 +600,7 @@ function App() {
         difficultyId: diff.id,
         foundCount: nextFound.length,
         totalWords: gridData.words.length,
-        elapsedSeconds: elapsed,
+        elapsedSeconds: finalElapsed,
         powerUpPenalty,
         points: nextFound.length * POINTS_PER_WORD - powerUpPenalty,
       }).catch(() => null);
@@ -567,13 +611,22 @@ function App() {
     } else {
       setResult(buildResult(nextFound, nextScores));
     }
-  }, [activeMatch, buildResult, currentThemeLabel, diff.id, elapsed, found, gridData.words.length, mode, powerUpPenalty, refreshSocial, scores, stopGameTimer, stopTurnTimer, user]);
+  }, [activeMatch, buildResult, currentThemeLabel, diff.id, found, gridData.words.length, mode, powerUpPenalty, refreshSocial, scores, stopGameTimer, stopSoloLimitTimer, stopTurnTimer, user]);
+
+  useEffect(() => {
+    finishGameRef.current = finishGame;
+  }, [finishGame]);
 
   useEffect(() => {
     const limit = Number(activeMatch?.VremenskoOgranicenjeSekundi || 300);
     if (screen !== 'game' || mode !== 'versus' || result || elapsed < limit) return;
     finishGame(found, [found.length, scores[1]]);
   }, [activeMatch, elapsed, finishGame, found, mode, result, scores, screen]);
+
+  useEffect(() => {
+    if (screen !== 'game' || mode !== 'solo' || result || elapsed < SOLO_GAME_LIMIT_SECONDS) return;
+    finishGame(found, scores);
+  }, [elapsed, finishGame, found, mode, result, scores, screen]);
 
   useEffect(() => {
     if (screen !== 'game' || mode !== 'multiplayer' || turnLeft !== 0 || result) return;
@@ -591,9 +644,10 @@ function App() {
   useEffect(() => () => {
     stopGameTimer();
     stopTurnTimer();
+    stopSoloLimitTimer();
     window.clearTimeout(firstLetterTimerRef.current);
     window.clearTimeout(helperPathTimerRef.current);
-  }, [stopGameTimer, stopTurnTimer]);
+  }, [stopGameTimer, stopSoloLimitTimer, stopTurnTimer]);
 
   async function handleAuth() {
     setError('');
@@ -614,6 +668,9 @@ function App() {
   function logout() {
     localStorage.removeItem('ukrstene-user');
     localStorage.removeItem('ukrstene-active-match');
+    stopGameTimer();
+    stopTurnTimer();
+    stopSoloLimitTimer();
     setUser(null);
     setNotice('');
     setError('');
@@ -627,6 +684,8 @@ function App() {
   function goHome() {
     stopGameTimer();
     stopTurnTimer();
+    stopSoloLimitTimer();
+    finishingRef.current = false;
     setResult(null);
     setTurnPopup(null);
     setActiveMatch(null);
@@ -646,9 +705,12 @@ function App() {
     const selectedDiff = overrides.diff || diff;
     const themeLabel = overrides.themeLabel || customTheme.trim() || selectedTheme.label;
     const themeId = customTheme.trim() ? customTheme.trim() : selectedTheme.id;
+    const maxWordLength = Math.min(selectedDiff.n, 12);
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
     setError('');
+    stopSoloLimitTimer();
+    finishingRef.current = false;
     setResult(null);
     setTurnPopup(null);
     setFound([]);
@@ -657,6 +719,9 @@ function App() {
     setSelectionStart(null);
     setSelectionCells([]);
     setScores([0, 0]);
+    latestFoundRef.current = [];
+    latestScoresRef.current = [0, 0];
+    latestElapsedRef.current = 0;
     const powerUpKey = entityId(match) ? `ukrstene-powerups-${entityId(match)}` : null;
     let restoredPowerUps = { firstLetter: false, helperPath: false };
     if (gameMode === 'versus' && powerUpKey) {
@@ -677,10 +742,28 @@ function App() {
     setLoadingMessage(apiKey ? 'AI generiše tematske riječi...' : `Pripremam riječi za temu: ${themeLabel}...`);
 
     try {
-      const words = overrides.words?.length
-        ? overrides.words
-        : await fetchWords(themeLabel, themeId, selectedDiff.wc, apiKey, Boolean(customTheme.trim()), selectedDiff.n, selectedTheme.id);
-      const nextGrid = buildGrid(words, selectedDiff.n, gameMode === 'versus' ? entityId(match) : undefined);
+      let words = [];
+      let nextGrid = null;
+      let lastGridError = null;
+      const usePresetWords = Boolean(overrides.words?.length);
+
+      for (let attempt = 1; attempt <= GRID_GENERATION_ATTEMPTS; attempt++) {
+        if (attempt > 1) {
+          setLoadingMessage('Riječi ne staju u tablu, generišem novi set...');
+        }
+        words = usePresetWords
+          ? overrides.words
+          : await fetchWords(themeLabel, themeId, selectedDiff.wc, apiKey, Boolean(customTheme.trim()), maxWordLength, selectedTheme.id);
+        try {
+          nextGrid = buildGrid(words, selectedDiff.n, gameMode === 'versus' ? entityId(match) : undefined);
+          break;
+        } catch (gridError) {
+          lastGridError = gridError;
+          if (usePresetWords) break;
+        }
+      }
+
+      if (!nextGrid) throw lastGridError || new Error('Nije moguće pripremiti tablu.');
       const restoredFound = overrides.foundWords || [];
       const restoredCells = {};
       const restoredColors = {};
@@ -693,18 +776,35 @@ function App() {
       });
       setGridData(nextGrid);
       setFound(restoredFound);
+      latestFoundRef.current = restoredFound;
       setDoneCells(restoredCells);
       setWordColors(restoredColors);
-      setScores([restoredFound.length, Number(overrides.opponentScore || 0)]);
+      const restoredScores = [restoredFound.length, Number(overrides.opponentScore || 0)];
+      setScores(restoredScores);
+      latestScoresRef.current = restoredScores;
       const initialElapsed = gameMode === 'versus'
         ? Math.max(0, Number(overrides.elapsedSeconds ?? match?.ProtekloSekundi ?? 0))
         : 0;
       setElapsed(initialElapsed);
+      latestElapsedRef.current = initialElapsed;
       gameStartedAtRef.current = Date.now() - initialElapsed * 1000;
       setScreen('game');
+      if (gameMode === 'solo') startSoloLimitTimer(initialElapsed);
       if (gameMode === 'versus') localStorage.setItem('ukrstene-active-match', String(entityId(match)));
       timerRef.current = window.setInterval(() => {
-        setElapsed(Math.max(0, Math.floor((Date.now() - gameStartedAtRef.current) / 1000)));
+        const nextElapsed = Math.max(0, Math.floor((Date.now() - gameStartedAtRef.current) / 1000));
+        if (gameMode === 'solo' && nextElapsed >= SOLO_GAME_LIMIT_SECONDS) {
+          latestElapsedRef.current = SOLO_GAME_LIMIT_SECONDS;
+          setElapsed(SOLO_GAME_LIMIT_SECONDS);
+          window.clearInterval(timerRef.current);
+          timerRef.current = null;
+          window.setTimeout(() => {
+            finishGameRef.current?.(latestFoundRef.current, latestScoresRef.current);
+          }, 0);
+          return;
+        }
+        latestElapsedRef.current = nextElapsed;
+        setElapsed(nextElapsed);
       }, 250);
       if (gameMode === 'multiplayer') {
         showTurnPopup('Početak igre', `Prvi igra: ${names.p1}`);
@@ -713,10 +813,40 @@ function App() {
       if (entityId(match) && user && !overrides.resume) {
         updateMatchProgress(entityId(match), { userId: entityId(user), foundWords: [], elapsedSeconds: 0, finished: false, powerUpPenalty: 0, points: 0 }).catch(() => null);
       }
+      return true;
     } catch (err) {
+      if (gameMode === 'versus' && overrides.resume && entityId(match) && user) {
+        localStorage.removeItem('ukrstene-active-match');
+        setActiveMatch(null);
+        setOnlineOpponent(null);
+        setSocial((current) => ({ ...current, activeMatch: null }));
+        await forfeitMatch(entityId(match), {
+          userId: entityId(user),
+          foundWords: [],
+          elapsedSeconds: 0,
+          finished: true,
+          powerUpPenalty: 0,
+          points: 0,
+        }).catch(() => null);
+        refreshSocial();
+        setNotice('Pokvareni mec je ociscen. Mozes normalno nastaviti.');
+        setError('');
+        setScreen('home');
+        setActiveTab('play');
+        return false;
+      }
+      stopSoloLimitTimer();
+      if (/4 do \d+ slova|moraju imati/i.test(String(err.message || ''))) {
+        setError('');
+        setNotice('AI je vratio neispravne rijeci. Pokreni generisanje ponovo.');
+        setScreen('home');
+        setActiveTab('play');
+        return false;
+      }
       setError(`Greška: ${err.message}`);
       setScreen('home');
       setActiveTab('play');
+      return false;
     }
   }
 
@@ -744,6 +874,7 @@ function App() {
       const foundColor = mode === 'multiplayer' ? PLAYER_COLORS[currentPlayer] : mode === 'versus' ? PLAYER_COLORS[0] : 'var(--teal)';
       for (const [r, c] of selectionCells) nextDoneCells[`${r}-${c}`] = foundColor;
       setFound(nextFound);
+      latestFoundRef.current = nextFound;
       setDoneCells(nextDoneCells);
       setWordColors((current) => ({ ...current, [match]: foundColor }));
 
@@ -756,6 +887,7 @@ function App() {
         const nextScores = [...scores];
         nextScores[currentPlayer] += 1;
         setScores(nextScores);
+        latestScoresRef.current = nextScores;
         if (nextFound.length === gridData.words.length) window.setTimeout(() => finishGame(nextFound, nextScores), 500);
         else {
           const nextPlayer = 1 - currentPlayer;
@@ -766,6 +898,7 @@ function App() {
       } else if (mode === 'versus') {
         const nextScores = [nextFound.length, scores[1]];
         setScores(nextScores);
+        latestScoresRef.current = nextScores;
         if (nextFound.length === gridData.words.length) {
           window.setTimeout(() => finishGame(nextFound, nextScores), 500);
         }
@@ -846,7 +979,7 @@ function App() {
           diff.wc,
           import.meta.env.VITE_GEMINI_API_KEY,
           true,
-          diff.n,
+          Math.min(diff.n, 12),
         )
         : [];
       const createdChallenge = await createChallenge({
@@ -1059,7 +1192,7 @@ function App() {
                   {mode === 'solo' && (
                     <div className="mode-intro">
                       <div className="mode-intro-icon solo"><Gamepad2 size={21} /></div>
-                      <div><strong>Solo igra</strong><span>Igraš sa svojim nalogom, bez unosa dodatnog imena.</span></div>
+                      <div><strong>Solo igra</strong></div>
                     </div>
                   )}
 
@@ -1361,7 +1494,7 @@ function App() {
               </div>
             ) : (
               <>
-                <div className="challenge-waiting"><span />Zahtjev poslat, čeka se odgovor još {challengeSecondsLeft}s...</div>
+                
                 <button className="btn btn-outline" type="button" onClick={() => setDismissedChallengeId(entityId(outgoingChallenge))}>Nastavi koristiti aplikaciju</button>
               </>
             )}

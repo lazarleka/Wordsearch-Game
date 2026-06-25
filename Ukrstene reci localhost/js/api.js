@@ -21,11 +21,16 @@ async function fetchWords(theme, count, key) {
 
 Pravila:
 - Svaka reč mora biti JEDNA reč (bez razmaka i crtice)
+- Ukoliko je na primer u pitanju tema film i ukoliko se film sastoji iz vise reci,nemoj da ga saljes,hocu da je jedan pojam samostalna rec i da se ne sastoji iz vise reci.
+- Dobro obraziti temu u rečima i nemojte generisati reči koje nisu relevantne za temu
 - Dužina: 4 do 10 slova
 - Samo slova A-Z (bez dijakritika: š->S, č->C, ć->C, đ->D, ž->Z)
 - Sve reči velikim slovima
 - Reči moraju biti relevantne za temu
 - Bez duplikata
+- Prija slanja obavezno proveri da li su sva pravila ispoštovana, ako nisu, generiši ponovo dok ne budu ispoštovana sva pravila
+
+
 
 Vrati ISKLJUČIVO JSON niz.
 Bez markdown-a.

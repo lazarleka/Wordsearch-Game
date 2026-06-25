@@ -508,18 +508,24 @@ button, input, textarea { touch-action: manipulation; }
 .search-bar input { min-width: 0; border: 0; outline: 0; color: var(--text); background: transparent; }
 .search-bar input::placeholder { color: #747487; }
 .search-bar button, .row-action { display: inline-flex; min-height: 34px; align-items: center; justify-content: center; gap: 6px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 5px; color: var(--text); background: var(--surface-3); font-size: 0.76rem; font-weight: 800; }
+.data-row .row-action { width: 112px; min-width: 112px; max-width: 112px; box-sizing: border-box; }
 .row-action.accent { border-color: rgba(255, 75, 110, 0.35); color: var(--accent); background: var(--accent-soft); }
 .relationship-status {
   display: inline-flex;
-  min-height: 32px;
+  width: 112px;
+  min-width: 112px;
+  max-width: 112px;
+  min-height: 34px;
   align-items: center;
+  justify-content: center;
   gap: 5px;
-  padding: 6px 9px;
+  padding: 7px 10px;
   border-radius: 5px;
   color: var(--muted);
   background: var(--surface-3);
-  font-size: 0.72rem;
+  font-size: 0.76rem;
   font-weight: 800;
+  box-sizing: border-box;
 }
 
 .relationship-status.friend { color: var(--teal); background: var(--teal-soft); }

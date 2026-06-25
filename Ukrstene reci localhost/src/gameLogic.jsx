@@ -68,14 +68,14 @@ function buildGridAttempt(words, n, random) {
 }
 
 export function buildGrid(words, n, seed) {
+  const maxWordLength = Math.min(n, 12);
   const normalized = [...new Set(words
     .map((word) => String(word).toUpperCase().replace(/[^A-Z]/g, ''))
-    .filter((word) => word.length >= 4 && word.length <= n))];
+    .filter((word) => word.length >= 4 && word.length <= maxWordLength))];
 
-  if (normalized.length !== words.length) {
-    throw new Error(`Sve riječi moraju imati od 4 do ${n} slova.`);
+  if (normalized.length === 0) {
+    throw new Error('Nema validnih rijeci za ovu tablu.');
   }
-
   for (let attempt = 0; attempt < 80; attempt++) {
     const attemptSeed = seed === undefined || seed === null ? undefined : Number(seed) * 97 + attempt;
     const result = buildGridAttempt(normalized, n, createRandom(attemptSeed));
@@ -151,17 +151,27 @@ async function fetchWordsFromSource(themeLabel, themeId, count, apiKey, preferAp
     return validWords;
   }
 
- const prompt = `You are generating words for a word-search puzzle game in Bosnian/Serbian/Croatian language.
-Topic: "${themeLabel}"
-Task: Return exactly ${count} well-known, specific nouns closely related to this topic.
-Rules:
-- Words must be strongly and directly associated with the topic (not loosely related)
-- Prefer concrete, recognizable nouns that players would immediately connect to the topic
-- Use Latin letters A-Z only — replace diacritics: S for Š, C for C/Č/Ć, Z for Ž, DJ for Đ
-- All uppercase, minimum 4 letters, maximum ${maxLength} letters
-- No duplicates, no generic words like STVAR, OBJEKAT, POJAM
-- Use common Bosnian/Serbian/Croatian words when possible`;
- 
+ const prompt = `Ti si generator reči za igru osmosmerke. Generiši najmanje ${count * 2} reči na srpskom jeziku (latinica) na temu "${themeLabel}".
+
+Pravila:
+- Svaka reč mora biti JEDNA reč (bez razmaka i crtice)
+- Ukoliko je na primer u pitanju tema film i ukoliko se film sastoji iz vise reci,nemoj da ga saljes,hocu da je jedan pojam samostalna rec i da se ne sastoji iz vise reci.
+- Dobro obraziti temu u rečima i nemojte generisati reči koje nisu relevantne za temu
+- Duzina: 4 do ${maxLength} slova
+- Samo slova A-Z (bez dijakritika: š->S, č->C, ć->C, đ->D, ž->Z)
+- Sve reči velikim slovima
+- Reči moraju biti relevantne za temu
+- Bez duplikata
+- Prija slanja obavezno proveri da li su sva pravila ispoštovana, ako nisu, generiši ponovo dok ne budu ispoštovana sva pravila
+
+
+
+Vrati ISKLJUČIVO JSON niz.
+Bez markdown-a.
+Bez objašnjenja.
+Bez uvodnog teksta.
+Format odgovora mora biti tačno ovakav:
+["REC1","REC2","REC3"]`;
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`;
 
@@ -184,7 +194,7 @@ Rules:
           type: 'array',
           items: { type: 'string' },
           minItems: count,
-          maxItems: count,
+          maxItems: Math.max(count * 3, count),
         },
       },
     }),
