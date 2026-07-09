@@ -1,0 +1,14 @@
+{
+  "appId": "com.ukrstenerijeci.app",
+  "appName": "Ukrstene rijeci",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "http"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_game",
+      "iconColor": "#FFC845"
+    }
+  }
+}

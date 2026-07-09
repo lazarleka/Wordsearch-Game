@@ -111,4 +111,40 @@ public class GameService {
     public Map<String, Object> approveThemeSubmission(int id) {
         return gameRepository.approveThemeSubmission(id);
     }
+
+    public Map<String, Object> approveThemeSubmission(int id, Map<String, Object> request) {
+        return gameRepository.approveThemeSubmission(id, request);
+    }
+
+    public Map<String, Object> adminDashboard(int adminUserId) {
+        return gameRepository.adminDashboard(adminUserId);
+    }
+
+    public Map<String, Object> createAdminTheme(Map<String, Object> request) {
+        return gameRepository.createAdminTheme(request);
+    }
+
+    public Map<String, Object> updateAdminTheme(String id, Map<String, Object> request) {
+        return gameRepository.updateAdminTheme(id, request);
+    }
+
+    public boolean deleteAdminTheme(int adminUserId, String id) {
+        return gameRepository.deleteAdminTheme(adminUserId, id);
+    }
+
+    public Map<String, Object> createAdminWord(Map<String, Object> request) {
+        return gameRepository.createAdminWord(request);
+    }
+
+    public Map<String, Object> updateAdminWord(int id, Map<String, Object> request) {
+        return gameRepository.updateAdminWord(id, request);
+    }
+
+    public boolean deleteAdminWord(int adminUserId, int id) {
+        return gameRepository.deleteAdminWord(adminUserId, id);
+    }
+
+    public Map<String, Object> rejectThemeSubmission(int id, Map<String, Object> request) {
+        return gameRepository.rejectThemeSubmission(id, request);
+    }
 }

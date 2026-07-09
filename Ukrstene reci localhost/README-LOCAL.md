@@ -2,8 +2,8 @@
 
 Ova kopija koristi lokalne servise:
 
-- frontend: http://localhost:5173
-- backend: http://localhost:8081
+- frontend: http://localhost:4713
+- backend: http://localhost:8082
 - MySQL: localhost:3306
 - baza: ukrstene_reci
 - MySQL korisnik: root

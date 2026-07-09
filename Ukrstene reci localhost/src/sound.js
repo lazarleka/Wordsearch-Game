@@ -1,5 +1,8 @@
 let audioCtx = null;
 let soundEnabled = false;
+let ambientAudio = null;
+let musicMuted = false;
+const AMBIENT_VOLUME = 0.09;
 
 export function initSound() {
   try {
@@ -15,6 +18,46 @@ export function initSound() {
   } catch (err) {
     console.warn('Ne mogu da pokrenem zvuk:', err);
   }
+}
+
+function getAmbientAudio() {
+  if (!ambientAudio) {
+    ambientAudio = new Audio('/muzika.mp3');
+    ambientAudio.loop = true;
+    ambientAudio.preload = 'auto';
+    ambientAudio.volume = AMBIENT_VOLUME;
+  }
+  return ambientAudio;
+}
+
+export function setMusicMuted(nextMuted) {
+  musicMuted = Boolean(nextMuted);
+  const audio = getAmbientAudio();
+  audio.muted = musicMuted;
+  if (musicMuted) {
+    audio.pause();
+  }
+}
+
+export function startAmbientMusic() {
+  try {
+    const audio = getAmbientAudio();
+    audio.volume = AMBIENT_VOLUME;
+    audio.muted = musicMuted;
+    if (musicMuted) return;
+    audio.play().catch(() => null);
+  } catch (err) {
+    console.warn('Ne mogu da pokrenem pozadinsku muziku:', err);
+  }
+}
+
+export function stopAmbientMusic() {
+  if (!ambientAudio) return;
+  ambientAudio.pause();
+}
+
+export function isMusicMuted() {
+  return musicMuted;
 }
 
 function playTone(freq, duration = 0.12, type = 'sine', volume = 0.02, sweepTo = null) {
@@ -53,7 +96,7 @@ export function playSuccessSound() {
 }
 
 export function playFailSound() {
-  playTone(320, 0.09, 'triangle', 0.05, 220);
+  playTone(320, 0.12, 'triangle', 0.09, 210);
 }
 
 export function playWinSound() {

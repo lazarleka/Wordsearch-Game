@@ -1,0 +1,4 @@
+interface:
+  display_name: "Osmosmerka UI Popravke"
+  short_description: "Popravlja mobilni UI i zmijica mod."
+  default_prompt: "Koristi ovaj skill za fokusirane popravke mobilnog rasporeda, modala, prevlacenja u zmijica modu i indeksiranja slova u Osmosmerki."

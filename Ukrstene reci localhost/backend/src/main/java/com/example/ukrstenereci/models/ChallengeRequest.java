@@ -12,6 +12,8 @@ public class ChallengeRequest {
     private int gridSize;
     private int timeLimitSeconds;
     private String customTheme;
+    private String gameType;
+    private String matchMode;
     private List<String> words = new ArrayList<>();
 
     public int getChallengerId() { return challengerId; }
@@ -30,6 +32,10 @@ public class ChallengeRequest {
     public void setTimeLimitSeconds(int timeLimitSeconds) { this.timeLimitSeconds = timeLimitSeconds; }
     public String getCustomTheme() { return customTheme; }
     public void setCustomTheme(String customTheme) { this.customTheme = customTheme; }
+    public String getGameType() { return gameType; }
+    public void setGameType(String gameType) { this.gameType = gameType; }
+    public String getMatchMode() { return matchMode; }
+    public void setMatchMode(String matchMode) { this.matchMode = matchMode; }
     public List<String> getWords() { return words; }
     public void setWords(List<String> words) { this.words = words; }
 }

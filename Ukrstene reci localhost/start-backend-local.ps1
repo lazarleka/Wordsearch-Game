@@ -26,16 +26,17 @@ if (-not $mysql -and (Test-Path -LiteralPath $knownMysql)) {
 if (-not $mysql) {
     throw "mysql.exe nije pronadjen."
 }
+$mysqlPath = if ($mysql.Source) { $mysql.Source } else { $mysql.FullName }
 
 $env:MYSQL_PWD = $DbPassword
 try {
-    & $mysql.Source --host=localhost --port=3306 --user=$DbUsername --execute="SELECT 1" | Out-Null
+    & $mysqlPath --host=localhost --port=3306 --user=$DbUsername --execute="SELECT 1" | Out-Null
     if ($LASTEXITCODE -ne 0) {
         throw "MySQL prijava nije uspjela. Provjeri lozinku."
     }
 
     Get-Content (Join-Path $backend "database\schema.sql") |
-        & $mysql.Source --host=localhost --port=3306 --user=$DbUsername
+        & $mysqlPath --host=localhost --port=3306 --user=$DbUsername
     if ($LASTEXITCODE -ne 0) {
         throw "Kreiranje ili azuriranje baze nije uspjelo."
     }
@@ -50,6 +51,19 @@ $env:DB_NAME = "ukrstene_reci"
 $env:DB_USERNAME = $DbUsername
 $env:DB_PASSWORD = $DbPassword
 $env:DB_SSL_MODE = "DISABLED"
+$env:PORT = "8082"
+
+$backendEnv = Join-Path $backend ".env.local"
+@(
+    "DB_HOST=localhost",
+    "DB_PORT=3306",
+    "DB_NAME=ukrstene_reci",
+    "DB_USERNAME=$DbUsername",
+    "DB_PASSWORD=$DbPassword",
+    "DB_SSL_MODE=DISABLED",
+    "DB_POOL_SIZE=5",
+    "PORT=8082"
+) | Set-Content -LiteralPath $backendEnv -Encoding UTF8
 
 Push-Location $backend
 try {

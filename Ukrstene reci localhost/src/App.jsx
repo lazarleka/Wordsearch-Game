@@ -5,12 +5,20 @@ import {
   Gamepad2,
   History,
   LogOut,
+  Pencil,
+  Plus,
+  Route,
+  Rows3,
   Search,
+  ShieldCheck,
   Sparkles,
   Swords,
+  Trash2,
   Trophy,
   UserPlus,
   Users,
+  Volume2,
+  VolumeX,
   WandSparkles,
   X,
 } from 'lucide-react';
@@ -19,10 +27,15 @@ import {
   acceptChallenge,
   acceptFriend,
   createChallenge,
+  createAdminTheme,
+  createAdminWord,
+  deleteAdminTheme,
+  deleteAdminWord,
   fetchThemesFromDatabase,
   finishMatch,
   forfeitMatch,
   getActiveMatch,
+  getAdminDashboard,
   getChallenges,
   getFriendsPage,
   getLeaderboard,
@@ -34,11 +47,14 @@ import {
   registerUser,
   requestFriend,
   saveSoloResult,
+  updateAdminTheme,
+  updateAdminWord,
   updateMatchProgress,
 } from './api.js';
 import { DIFFICULTIES, THEMES } from './data.js';
-import { buildGrid, cellsForSelection, fetchWords, getSelectedWord } from './gameLogic.jsx';
-import { initSound, playFailSound, playSuccessSound, playWinSound } from './sound.js';
+import { buildGrid, buildSnakeGrid, cellsForSelection, fetchWords, getSelectedWord } from './gameLogic.jsx';
+import { addMobileNotificationListeners, initializeMobileNotifications, notifyIncomingChallenges } from './mobileNotifications.js';
+import { initSound, playFailSound, playSuccessSound, playWinSound, setMusicMuted, startAmbientMusic, stopAmbientMusic } from './sound.js';
 
 const defaultDiff = DIFFICULTIES[0];
 const turnSeconds = 20;
@@ -47,6 +63,28 @@ const GRID_GENERATION_ATTEMPTS = 4;
 const PLAYER_COLORS = ['#ff4b6e', '#00d9b0'];
 const POINTS_PER_WORD = 100;
 const POWER_UP_PENALTY = 50;
+const emptyThemeForm = { label: '' };
+const emptyWordForm = { themeId: '', word: '' };
+
+function debugMatchPayload(match) {
+  if (!match) return null;
+  return {
+    id: entityId(match),
+    status: match.Status,
+    themeId: match.Tema_ID,
+    themeName: match.TemaNaziv,
+    customTheme: match.CustomTema,
+    difficulty: match.Tezina,
+    boardMode: match.VrstaIgre,
+    matchMode: match.ModMeca,
+    gridSize: match.VelicinaMatrice,
+    wordCount: match.BrojRijeci,
+    elapsedSeconds: match.ProtekloSekundi,
+    wordsJson: match.RijeciJson,
+    myWordsJson: match.MojeRijeciJson,
+    claimedWordsJson: match.OsvojeneRijeciJson,
+  };
+}
 
 function entityId(item) {
   return item?.ID ?? item?.id;
@@ -61,6 +99,30 @@ function parseStoredWords(value) {
   } catch {
     return [];
   }
+}
+
+function parseStoredWordOwners(value) {
+  if (!value) return {};
+  if (typeof value === 'object' && !Array.isArray(value)) return value;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function isOnlineMode(mode) {
+  return mode === 'versus' || mode === 'race';
+}
+
+function modeLabel(mode) {
+  return mode === 'race' ? 'Ko će brže' : 'Versus';
+}
+
+function wordFetchOptionsForBoard(boardMode, difficulty) {
+  if (boardMode !== 'zmijica') return {};
+  return { maxTotalLetters: Math.floor(difficulty.n * difficulty.n * 0.62) };
 }
 
 function formatTime(seconds) {
@@ -114,6 +176,7 @@ function App() {
   });
   const [authForm, setAuthForm] = useState({ korisnickoIme: '', ime: '', prezime: '', email: '', lozinka: '' });
   const [mode, setMode] = useState('solo');
+  const [boardMode, setBoardMode] = useState('obican');
   const [onlineOpponent, setOnlineOpponent] = useState(null);
   const [selectedVersusFriend, setSelectedVersusFriend] = useState(null);
   const [activeMatch, setActiveMatch] = useState(null);
@@ -127,6 +190,7 @@ function App() {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [gridData, setGridData] = useState({ grid: [], words: [], placements: [] });
   const [found, setFound] = useState([]);
+  const [wordOwners, setWordOwners] = useState({});
   const [doneCells, setDoneCells] = useState({});
   const [wordColors, setWordColors] = useState({});
   const [selectionStart, setSelectionStart] = useState(null);
@@ -146,10 +210,20 @@ function App() {
   const [challengeDeadline, setChallengeDeadline] = useState(0);
   const [challengeSending, setChallengeSending] = useState(false);
   const [friendActionId, setFriendActionId] = useState(null);
+  const [musicMuted, setMusicMutedState] = useState(() => localStorage.getItem('ukrstene-music-muted') === 'true');
   const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
   const [confirmExit, setConfirmExit] = useState(false);
   const [socialReady, setSocialReady] = useState(false);
   const [social, setSocial] = useState({ friends: [], friendships: [], allUsers: [], challenges: [], outgoingChallenges: [], activeMatch: null, leaderboard: [], history: [] });
+  const [adminData, setAdminData] = useState({ themes: [], words: [], submissions: [] });
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [themeForm, setThemeForm] = useState(emptyThemeForm);
+  const [editingThemeId, setEditingThemeId] = useState(null);
+  const [wordForm, setWordForm] = useState(emptyWordForm);
+  const [editingWordId, setEditingWordId] = useState(null);
+  const [adminThemeSearch, setAdminThemeSearch] = useState('');
+  const [adminWordSearch, setAdminWordSearch] = useState('');
+  const [adminWordThemeFilter, setAdminWordThemeFilter] = useState('');
 
   const timerRef = useRef(null);
   const soloLimitTimerRef = useRef(null);
@@ -164,9 +238,10 @@ function App() {
   const latestScoresRef = useRef([0, 0]);
   const latestElapsedRef = useRef(0);
   const finishGameRef = useRef(null);
+  const selectionCellsRef = useRef([]);
 
   const names = useMemo(() => {
-    if (mode === 'versus') {
+    if (isOnlineMode(mode)) {
       return {
         p1: user?.korisnickoIme || user?.ime || 'Igrač',
         p2: onlineOpponent?.korisnickoIme || onlineOpponent?.IzazivacIme || 'Prijatelj',
@@ -180,9 +255,25 @@ function App() {
 
   const selectedKeys = useMemo(() => new Set(selectionCells.map(([r, c]) => `${r}-${c}`)), [selectionCells]);
   const helperPathKeys = useMemo(() => new Set(helperPathCells), [helperPathCells]);
+  const snakeLetterIndexes = useMemo(() => {
+    if (boardMode !== 'zmijica') return {};
+    const foundSet = new Set(found);
+    return gridData.placements.reduce((indexes, placement) => {
+      if (!foundSet.has(placement.word)) return indexes;
+      const wordOrder = found.indexOf(placement.word) + 1;
+      placement.cells.forEach(([r, c], index) => {
+        indexes[`${r}-${c}`] = `${wordOrder}.${index + 1}`;
+      });
+      return indexes;
+    }, {});
+  }, [boardMode, found, gridData.placements]);
+  const myUserId = entityId(user);
+  const ownFoundCount = mode === 'race'
+    ? Object.values(wordOwners).filter((ownerId) => Number(ownerId) === Number(myUserId)).length
+    : found.length;
   const powerUpPenalty = (powerUpsUsed.firstLetter ? POWER_UP_PENALTY : 0)
     + (powerUpsUsed.helperPath ? POWER_UP_PENALTY : 0);
-  const playerPoints = found.length * POINTS_PER_WORD - powerUpPenalty;
+  const playerPoints = ownFoundCount * POINTS_PER_WORD - powerUpPenalty;
   const friendshipByUser = useMemo(
     () => new Map(social.friendships.map((item) => [Number(item.DrugiKorisnik_ID), item])),
     [social.friendships],
@@ -202,10 +293,26 @@ function App() {
         .includes(query)
     ));
   }, [friendSearch, registeredUsers]);
+  const filteredAdminThemes = useMemo(() => {
+    const query = adminThemeSearch.trim().toLocaleLowerCase('bs');
+    if (!query) return adminData.themes;
+    return adminData.themes.filter((item) => (
+      displayThemeLabel(item.label).toLocaleLowerCase('bs').includes(query)
+    ));
+  }, [adminData.themes, adminThemeSearch]);
+  const filteredAdminWords = useMemo(() => {
+    const query = adminWordSearch.trim().toLocaleLowerCase('bs');
+    return adminData.words.filter((item) => {
+      const matchesTheme = !adminWordThemeFilter || item.Tema_ID === adminWordThemeFilter;
+      const matchesWord = !query || String(item.Rijec || '').toLocaleLowerCase('bs').includes(query);
+      return matchesTheme && matchesWord;
+    });
+  }, [adminData.words, adminWordSearch, adminWordThemeFilter]);
   const incomingFriendRequests = useMemo(
     () => social.friendships.filter((item) => item.Status === 'na_cekanju' && Number(item.Primalac_ID) === entityId(user)),
     [social.friendships, user],
   );
+  const isAdmin = user?.uloga === 'admin';
   const currentThemeLabel = customTheme.trim() || theme.label;
   const selectedOutgoingChallenge = useMemo(
     () => social.outgoingChallenges.find((item) => Number(item.Protivnik_ID) === entityId(selectedVersusFriend)),
@@ -241,9 +348,15 @@ function App() {
   }, [elapsed, found, scores]);
 
   useEffect(() => {
+    localStorage.setItem('ukrstene-music-muted', String(musicMuted));
+    setMusicMuted(musicMuted);
+    if (screen === 'game' && !musicMuted) startAmbientMusic();
+  }, [musicMuted, screen]);
+
+  useEffect(() => {
     if (!/4 do \d+ slova|moraju imati/i.test(error)) return;
     setError('');
-    setNotice('AI je vratio neispravne rijeci. Pokreni generisanje ponovo.');
+    setNotice('AI je vratio neispravne riječi. Pokreni generisanje ponovo.');
   }, [error]);
 
   const refreshThemes = useCallback(() => {
@@ -261,7 +374,7 @@ function App() {
   }, []);
 
   const refreshSocial = useCallback(async () => {
-    if (!user) return;
+    if (!user || user.uloga === 'admin') return;
     const [friendsPage, challenges, outgoingChallenges, currentMatch, leaderboard, history] = await Promise.all([
       getFriendsPage(entityId(user)),
       getChallenges(entityId(user)),
@@ -284,8 +397,93 @@ function App() {
     setSocialReady(true);
   }, [user]);
 
+  const refreshAdmin = useCallback(async () => {
+    if (!user || user.uloga !== 'admin') return;
+    setAdminLoading(true);
+    try {
+      const data = await getAdminDashboard(entityId(user));
+      setAdminData({
+        themes: data.themes || [],
+        words: data.words || [],
+        submissions: data.submissions || [],
+      });
+    } finally {
+      setAdminLoading(false);
+    }
+  }, [user]);
+
+  async function saveAdminTheme() {
+    setError('');
+    try {
+      const payload = { adminUserId: entityId(user), ...themeForm };
+      if (editingThemeId) {
+        await updateAdminTheme(editingThemeId, payload);
+        setNotice('Tema je izmijenjena.');
+      } else {
+        await createAdminTheme(payload);
+        setNotice('Tema je dodata.');
+      }
+      setThemeForm(emptyThemeForm);
+      setEditingThemeId(null);
+      await Promise.all([refreshAdmin(), refreshThemes()]);
+    } catch (err) {
+      setError(err.message || 'Tema nije sačuvana.');
+    }
+  }
+
+  async function removeAdminTheme(id) {
+    if (!window.confirm('Obrisati temu i njene riječi iz baze?')) return;
+    setError('');
+    try {
+      await deleteAdminTheme(entityId(user), id);
+      setNotice('Tema je obrisana.');
+      if (editingThemeId === id) {
+        setEditingThemeId(null);
+        setThemeForm(emptyThemeForm);
+      }
+      await Promise.all([refreshAdmin(), refreshThemes()]);
+    } catch (err) {
+      setError(err.message || 'Tema nije obrisana.');
+    }
+  }
+
+  async function saveAdminWord() {
+    setError('');
+    try {
+      const payload = { adminUserId: entityId(user), ...wordForm };
+      if (editingWordId) {
+        await updateAdminWord(editingWordId, payload);
+        setNotice('Riječ je izmijenjena.');
+      } else {
+        await createAdminWord(payload);
+        setNotice('Riječ je dodata.');
+      }
+      setWordForm(emptyWordForm);
+      setEditingWordId(null);
+      await Promise.all([refreshAdmin(), refreshThemes()]);
+    } catch (err) {
+      setError(err.message || 'Riječ nije sačuvana.');
+    }
+  }
+
+  async function removeAdminWord(id) {
+    if (!window.confirm('Obrisati riječ iz baze?')) return;
+    setError('');
+    try {
+      await deleteAdminWord(entityId(user), id);
+      setNotice('Riječ je obrisana.');
+      if (editingWordId === id) {
+        setEditingWordId(null);
+        setWordForm(emptyWordForm);
+      }
+      await Promise.all([refreshAdmin(), refreshThemes()]);
+    } catch (err) {
+      setError(err.message || 'Riječ nije obrisana.');
+    }
+  }
+
   const refreshFriendsPage = useCallback(async () => {
-    if (!user) return;
+    if (!user || user.uloga === 'admin') return;
     const friendsPage = await getFriendsPage(entityId(user));
     setSocial((current) => ({
       ...current,
@@ -296,7 +494,7 @@ function App() {
   }, [user]);
 
   const refreshLiveSocial = useCallback(async () => {
-    if (!user || liveRefreshRef.current) return;
+    if (!user || user.uloga === 'admin' || liveRefreshRef.current) return;
     liveRefreshRef.current = true;
     try {
       const [challenges, outgoingChallenges, currentMatch] = await Promise.all([
@@ -310,6 +508,9 @@ function App() {
         outgoingChallenges,
         activeMatch: currentMatch,
       }));
+      await notifyIncomingChallenges(entityId(user), challenges);
+    } catch {
+      // Keep the last known social state while a phone temporarily loses the backend.
     } finally {
       liveRefreshRef.current = false;
     }
@@ -322,13 +523,46 @@ function App() {
   useEffect(() => {
     if (!user) return;
     localStorage.setItem('ukrstene-user', JSON.stringify(user));
-    refreshSocial();
+    refreshSocial().catch(() => setNotice('Backend trenutno nije dostupan. Pokušaćemo ponovo automatski.'));
   }, [refreshSocial, user]);
 
   useEffect(() => {
-    if (!user) return undefined;
-    const poll = window.setInterval(refreshLiveSocial, 3000);
-    return () => window.clearInterval(poll);
+    if (isAdmin && activeTab !== 'admin') {
+      setActiveTab('admin');
+    }
+  }, [activeTab, isAdmin]);
+
+  useEffect(() => {
+    if (activeTab === 'admin' && isAdmin) {
+      refreshAdmin().catch((err) => setError(err.message || 'Admin podaci nisu učitani.'));
+    }
+  }, [activeTab, isAdmin, refreshAdmin]);
+
+  useEffect(() => {
+    if (!user || user.uloga === 'admin') return undefined;
+    initializeMobileNotifications()
+      .then(() => refreshLiveSocial())
+      .catch(() => null);
+    let removeListeners = () => {};
+    let listenersDisposed = false;
+    addMobileNotificationListeners({
+      onResume: refreshLiveSocial,
+      onNotificationOpen: () => {
+        setScreen('home');
+        setActiveTab('challenges');
+        setDismissedChallengeId(null);
+        refreshLiveSocial();
+      },
+    }).then((remove) => {
+      if (listenersDisposed) remove();
+      else removeListeners = remove;
+    });
+    const poll = window.setInterval(refreshLiveSocial, 5000);
+    return () => {
+      listenersDisposed = true;
+      window.clearInterval(poll);
+      removeListeners();
+    };
   }, [refreshLiveSocial, user]);
 
   useEffect(() => {
@@ -355,14 +589,71 @@ function App() {
     }
   }, [challengeDialog, challengeSecondsLeft, refreshLiveSocial]);
 
+  function applyRaceClaims(rawOwners, payloadPlayers = null) {
+    const owners = parseStoredWordOwners(rawOwners);
+    const claimedWords = gridData.words.filter((word) => owners[word] !== undefined);
+    const nextCells = {};
+    const nextColors = {};
+    gridData.placements.forEach((placement) => {
+      const ownerId = owners[placement.word];
+      if (ownerId === undefined) return;
+      const color = Number(ownerId) === Number(myUserId) ? PLAYER_COLORS[0] : PLAYER_COLORS[1];
+      nextColors[placement.word] = color;
+      placement.cells.forEach(([r, c]) => { nextCells[`${r}-${c}`] = color; });
+    });
+    setWordOwners(owners);
+    setFound(claimedWords);
+    latestFoundRef.current = claimedWords;
+    setDoneCells(nextCells);
+    setWordColors(nextColors);
+
+    const players = Array.isArray(payloadPlayers) ? payloadPlayers : [];
+    const myPlayer = players.find((item) => Number(item.Korisnik_ID) === Number(myUserId));
+    const otherPlayer = players.find((item) => Number(item.Korisnik_ID) !== Number(myUserId));
+    const myScore = myPlayer
+      ? Number(myPlayer.BrojPronadjenih || 0)
+      : Object.values(owners).filter((ownerId) => Number(ownerId) === Number(myUserId)).length;
+    const otherScore = otherPlayer
+      ? Number(otherPlayer.BrojPronadjenih || 0)
+      : Math.max(0, claimedWords.length - myScore);
+    const nextScores = [myScore, otherScore];
+    setScores(nextScores);
+    latestScoresRef.current = nextScores;
+    return { owners, myScore, otherScore };
+  }
+
+  function applyRaceProgress(payload) {
+    const players = parseStoredWords(payload?.playersJson);
+    return applyRaceClaims(payload?.claimedWordsJson || payload?.claimedWords, players);
+  }
+
   useEffect(() => {
-    if (!user) return;
+    if (screen !== 'game' || mode !== 'race' || !gridData.words.length) return;
+    if (!entityId(activeMatch) || entityId(activeMatch) !== entityId(social.activeMatch)) return;
+    if (!social.activeMatch?.OsvojeneRijeciJson) return;
+    applyRaceClaims(social.activeMatch.OsvojeneRijeciJson);
+  }, [activeMatch, gridData.words, mode, screen, social.activeMatch]);
+
+  useEffect(() => {
+    if (!user || user.uloga === 'admin') return undefined;
     const socket = new WebSocket(WS_URL);
     socket.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
-        if (message.type === 'match_progress' && mode === 'versus' && entityId(activeMatch) === Number(message.payload?.matchId) && entityId(user) !== Number(message.payload?.userId)) {
-          setScores((current) => [current[0], Number(message.payload?.foundCount || 0)]);
+        if (message.type === 'match_progress' && isOnlineMode(mode) && entityId(activeMatch) === Number(message.payload?.matchId) && entityId(user) !== Number(message.payload?.userId)) {
+          if (mode === 'race') {
+            if (message.payload?.claimedWordsJson || message.payload?.claimedWords) {
+              applyRaceProgress(message.payload);
+            } else {
+              getActiveMatch(entityId(user)).then((match) => {
+                if (match?.OsvojeneRijeciJson && entityId(match) === entityId(activeMatch)) {
+                  applyRaceClaims(match.OsvojeneRijeciJson);
+                }
+              }).catch(() => null);
+            }
+          } else {
+            setScores((current) => [current[0], Number(message.payload?.foundCount || 0)]);
+          }
         }
         if (message.type === 'challenge_rejected' && outgoingChallenge) {
           setNotice('Prijatelj je odbio izazov.');
@@ -380,7 +671,7 @@ function App() {
       refreshLiveSocial();
     };
     return () => socket.close();
-  }, [activeMatch, mode, outgoingChallenge, refreshFriendsPage, refreshLiveSocial, user]);
+  }, [activeMatch, gridData.placements, gridData.words, mode, outgoingChallenge, refreshFriendsPage, refreshLiveSocial, user, wordOwners]);
 
   async function handleAcceptFriend(friendshipId) {
     setFriendActionId(`accept-${friendshipId}`);
@@ -506,6 +797,7 @@ function App() {
       const pct = Math.round((nextFound.length / gridData.words.length) * 100) || 0;
       return {
         icon: 'WIN',
+        mode,
         title: `Bravo, ${names.p1}!`,
         score: `${finalPoints} bodova`,
         message: `Pronašao/la si ${nextFound.length} od ${gridData.words.length} riječi (${pct}%) za ${formatTime(finalElapsed)}.\nPower-up kazna: -${powerUpPenalty} bodova.`,
@@ -514,6 +806,7 @@ function App() {
     const winner = nextScores[0] > nextScores[1] ? names.p1 : nextScores[1] > nextScores[0] ? names.p2 : null;
     return {
       icon: winner ? 'WIN' : 'VS',
+      mode,
       title: winner ? `Pobijedio/la ${winner}!` : 'Neriješeno!',
       score: `${nextScores[0]} - ${nextScores[1]}`,
       message: `${names.p1}: ${nextScores[0]} riječi | ${names.p2}: ${nextScores[1]} riječi\nTvoji bodovi: ${finalPoints} (kazna -${powerUpPenalty})\nVrijeme: ${formatTime(finalElapsed)}`,
@@ -522,6 +815,7 @@ function App() {
 
   function showVersusResult(matchResult) {
     stopGameTimer();
+    stopAmbientMusic();
     setConfirmExit(false);
     localStorage.removeItem('ukrstene-active-match');
     setScreen('home');
@@ -549,22 +843,77 @@ function App() {
     const otherName = Number(matchResult?.challengerUserId) === entityId(user)
       ? matchResult?.opponentName || names.p2
       : matchResult?.challengerName || names.p2;
+    const otherUserId = Number(matchResult?.challengerUserId) === entityId(user)
+      ? Number(matchResult?.opponentUserId)
+      : Number(matchResult?.challengerUserId);
+    const replayOpponent = social.friends.find((friend) => entityId(friend) === otherUserId)
+      || onlineOpponent
+      || (otherUserId ? { ID: otherUserId, korisnickoIme: otherName } : null);
     const winnerName = winnerUserId === entityId(user) ? myName : winnerUserId ? otherName : null;
     const winnerPlayer = resultPlayers.find((item) => Number(item.Korisnik_ID) === winnerUserId);
     const resultDifficulty = DIFFICULTIES.find((item) => item.id === matchResult?.difficultyId)?.label || diff.label;
     const resultTheme = displayThemeLabel(matchResult?.themeName || currentThemeLabel);
+    const raceResult = matchResult?.matchMode === 'race';
     const reasonText = matchResult?.reason === 'predaja'
       ? `${Number(matchResult?.forfeitedUserId) === entityId(user) ? 'Napustio/la si meč.' : `${otherName} je napustio/la meč.`} Protivnik je automatski pobijedio.`
       : winnerName
-        ? `${winnerName} je prvi pronašao sve riječi ili je imao više riječi po isteku vremena.`
+        ? raceResult
+          ? `${winnerName} je pronašao/la više riječi na zajedničkoj tabli.`
+          : `${winnerName} je prvi pronašao sve riječi ili je imao više riječi po isteku vremena.`
         : 'Oba igrača su pronašla isti broj riječi.';
     setScores([myScore, otherScore]);
     setActiveMatch(null);
     setResult({
       icon: winnerName ? 'WIN' : 'VS',
+      mode: raceResult ? 'race' : 'versus',
       title: winnerName ? `Pobijedio/la je ${winnerName}!` : 'Neriješeno!',
       score: `${myScore} - ${otherScore}`,
-      message: `Tema: ${resultTheme}\nTežina: ${resultDifficulty}\nRezultat: ${myName} ${myScore} · ${otherName} ${otherScore}\nTvoji bodovi: ${myPoints} (power-up kazna -${powerUpPenalty})\nVrijeme pobjednika: ${formatTime(Number(winnerPlayer?.VrijemeSekundi || elapsed))}\n${reasonText}`,
+      message: `Tema: ${resultTheme}\nTežina: ${resultDifficulty}\nRezultat: ${myName} ${myScore} ? ${otherName} ${otherScore}\nTvoji bodovi: ${myPoints} (power-up kazna -${powerUpPenalty})\nVrijeme pobjednika: ${formatTime(Number(winnerPlayer?.VrijemeSekundi || elapsed))}\n${reasonText}`,
+      replay: {
+        opponent: replayOpponent,
+        challengeMode: raceResult ? 'race' : 'versus',
+        selectedTheme: theme,
+        selectedDiff: diff,
+        selectedBoardMode: boardMode,
+        selectedCustomTheme: customTheme,
+      },
+    });
+  }
+
+  async function playAgainFromResult() {
+    const replayMode = result?.mode || mode;
+    const replaySettings = result?.replay;
+    setResult(null);
+    setConfirmExit(false);
+    finishingRef.current = false;
+    localStorage.removeItem('ukrstene-active-match');
+    setActiveMatch(null);
+
+    if (replayMode === 'solo' || replayMode === 'multiplayer') {
+      setMode(replayMode);
+      await launchGame(null, { gameMode: replayMode });
+      return;
+    }
+
+    const nextMode = replayMode === 'race' ? 'race' : 'versus';
+    setMode(nextMode);
+    setScreen('home');
+    setActiveTab('play');
+    if (!replaySettings?.opponent) {
+      setNotice('Protivnik nije pronađen. Izaberi prijatelja i pošalji novi izazov.');
+      refreshSocial();
+      return;
+    }
+
+    setSelectedVersusFriend(replaySettings.opponent);
+    setOnlineOpponent(replaySettings.opponent);
+    setTheme(replaySettings.selectedTheme);
+    setDiff(replaySettings.selectedDiff);
+    setBoardMode(replaySettings.selectedBoardMode);
+    setCustomTheme(replaySettings.selectedCustomTheme);
+    await sendChallengeWithSettings({
+      ...replaySettings,
+      challengeMode: nextMode,
     });
   }
 
@@ -574,6 +923,7 @@ function App() {
     stopGameTimer();
     stopTurnTimer();
     stopSoloLimitTimer();
+    stopAmbientMusic();
     playWinSound();
     const finalElapsed = mode === 'solo'
       ? Math.min(latestElapsedRef.current, SOLO_GAME_LIMIT_SECONDS)
@@ -606,7 +956,7 @@ function App() {
       }).catch(() => null);
       refreshSocial();
     }
-    if (mode === 'versus' && versusResult) {
+    if (isOnlineMode(mode) && versusResult) {
       showVersusResult(versusResult);
     } else {
       setResult(buildResult(nextFound, nextScores));
@@ -645,6 +995,7 @@ function App() {
     stopGameTimer();
     stopTurnTimer();
     stopSoloLimitTimer();
+    stopAmbientMusic();
     window.clearTimeout(firstLetterTimerRef.current);
     window.clearTimeout(helperPathTimerRef.current);
   }, [stopGameTimer, stopSoloLimitTimer, stopTurnTimer]);
@@ -657,7 +1008,7 @@ function App() {
         : await registerUser({ ...authForm, avatarBoja: '#00e5b4' });
       setUser(nextUser);
       setScreen('home');
-      setActiveTab('play');
+      setActiveTab(nextUser?.uloga === 'admin' ? 'admin' : 'play');
       setNotice('');
       setDismissedChallengeId(null);
     } catch (err) {
@@ -671,9 +1022,18 @@ function App() {
     stopGameTimer();
     stopTurnTimer();
     stopSoloLimitTimer();
+    stopAmbientMusic();
     setUser(null);
     setNotice('');
     setError('');
+    setAdminData({ themes: [], words: [], submissions: [] });
+    setThemeForm(emptyThemeForm);
+    setEditingThemeId(null);
+    setWordForm(emptyWordForm);
+    setEditingWordId(null);
+    setAdminThemeSearch('');
+    setAdminWordSearch('');
+    setAdminWordThemeFilter('');
     setDismissedChallengeId(null);
     setFriendSearch('');
     setSocialReady(false);
@@ -685,18 +1045,25 @@ function App() {
     stopGameTimer();
     stopTurnTimer();
     stopSoloLimitTimer();
+    stopAmbientMusic();
     finishingRef.current = false;
     setResult(null);
     setTurnPopup(null);
+    setWordOwners({});
     setActiveMatch(null);
     setOnlineOpponent(null);
     setSelectedVersusFriend(null);
     setScreen('home');
   }
 
+  function toggleMusicMute() {
+    setMusicMutedState((current) => !current);
+  }
+
   async function launchGame(match = activeMatch, overrides = {}) {
     const gameMode = overrides.gameMode || mode;
-    if (gameMode === 'versus' && !entityId(match)) {
+    const selectedBoardMode = overrides.boardMode || boardMode;
+    if (isOnlineMode(gameMode) && !entityId(match)) {
       setError('Online meč počinje tek kada drugi korisnik prihvati izazov.');
       return;
     }
@@ -709,22 +1076,25 @@ function App() {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
     setError('');
+    setBoardMode(selectedBoardMode);
     stopSoloLimitTimer();
     finishingRef.current = false;
     setResult(null);
     setTurnPopup(null);
     setFound([]);
+    setWordOwners({});
     setDoneCells({});
     setWordColors({});
     setSelectionStart(null);
     setSelectionCells([]);
+    selectionCellsRef.current = [];
     setScores([0, 0]);
     latestFoundRef.current = [];
     latestScoresRef.current = [0, 0];
     latestElapsedRef.current = 0;
     const powerUpKey = entityId(match) ? `ukrstene-powerups-${entityId(match)}` : null;
     let restoredPowerUps = { firstLetter: false, helperPath: false };
-    if (gameMode === 'versus' && powerUpKey) {
+    if (isOnlineMode(gameMode) && powerUpKey) {
       try {
         restoredPowerUps = { ...restoredPowerUps, ...JSON.parse(localStorage.getItem(powerUpKey) || '{}') };
       } catch {
@@ -739,13 +1109,37 @@ function App() {
     setCurrentPlayer(0);
     setElapsed(0);
     setScreen('load');
-    setLoadingMessage(apiKey ? 'AI generiše tematske riječi...' : `Pripremam riječi za temu: ${themeLabel}...`);
+    setLoadingMessage(customTheme.trim() ? 'AI generise rijeci za tvoju temu...' : `Uzimam rijeci iz baze za temu: ${themeLabel}...`);
 
     try {
       let words = [];
       let nextGrid = null;
       let lastGridError = null;
       const usePresetWords = Boolean(overrides.words?.length);
+      const debugContext = {
+        gameMode,
+        selectedBoardMode,
+        themeLabel,
+        themeId,
+        difficulty: selectedDiff.id,
+        gridSize: selectedDiff.n,
+        requestedWordCount: selectedDiff.wc,
+        usePresetWords,
+        resume: Boolean(overrides.resume),
+        match: debugMatchPayload(match),
+        overrides: {
+          words: overrides.words,
+          foundWords: overrides.foundWords,
+          wordOwners: overrides.wordOwners,
+          opponentScore: overrides.opponentScore,
+          elapsedSeconds: overrides.elapsedSeconds,
+        },
+      };
+      if (isOnlineMode(gameMode) || overrides.resume) {
+        console.groupCollapsed('[Osmosmerka] Pokretanje online meca');
+        console.info('Kontekst pokretanja:', debugContext);
+        console.groupEnd();
+      }
 
       for (let attempt = 1; attempt <= GRID_GENERATION_ATTEMPTS; attempt++) {
         if (attempt > 1) {
@@ -753,44 +1147,88 @@ function App() {
         }
         words = usePresetWords
           ? overrides.words
-          : await fetchWords(themeLabel, themeId, selectedDiff.wc, apiKey, Boolean(customTheme.trim()), maxWordLength, selectedTheme.id);
+          : await fetchWords(
+            themeLabel,
+            themeId,
+            selectedDiff.wc,
+            apiKey,
+            Boolean(customTheme.trim()),
+            maxWordLength,
+            wordFetchOptionsForBoard(selectedBoardMode, selectedDiff),
+          );
         try {
-          nextGrid = buildGrid(words, selectedDiff.n, gameMode === 'versus' ? entityId(match) : undefined);
+          const gridBuilder = selectedBoardMode === 'zmijica' ? buildSnakeGrid : buildGrid;
+          if (isOnlineMode(gameMode) || overrides.resume) {
+            console.info('[Osmosmerka] Pokusaj pravljenja table', {
+              attempt,
+              builder: selectedBoardMode,
+              gridSize: selectedDiff.n,
+              seed: isOnlineMode(gameMode) ? entityId(match) : undefined,
+              rawWords: words,
+              normalizedWords: words.map((word) => String(word).toUpperCase().replace(/[^A-Z]/g, '')),
+            });
+          }
+          nextGrid = gridBuilder(words, selectedDiff.n, isOnlineMode(gameMode) ? entityId(match) : undefined);
+          if (isOnlineMode(gameMode) || overrides.resume) {
+            console.info('[Osmosmerka] Tabla napravljena', {
+              attempt,
+              placedWords: nextGrid.words,
+              placementCount: nextGrid.placements.length,
+            });
+          }
           break;
         } catch (gridError) {
           lastGridError = gridError;
+          if (isOnlineMode(gameMode) || overrides.resume) {
+            console.warn('[Osmosmerka] Neuspjelo pravljenje table', {
+              attempt,
+              message: gridError?.message,
+              stack: gridError?.stack,
+              words,
+            });
+          }
           if (usePresetWords) break;
         }
       }
 
       if (!nextGrid) throw lastGridError || new Error('Nije moguće pripremiti tablu.');
-      const restoredFound = overrides.foundWords || [];
+      const restoredWordOwners = parseStoredWordOwners(overrides.wordOwners);
+      const restoredFound = gameMode === 'race'
+        ? nextGrid.words.filter((word) => restoredWordOwners[word] !== undefined)
+        : overrides.foundWords || [];
       const restoredCells = {};
       const restoredColors = {};
       nextGrid.placements.forEach((placement) => {
         if (!restoredFound.includes(placement.word)) return;
-        restoredColors[placement.word] = PLAYER_COLORS[0];
-        for (let index = 0; index < placement.word.length; index++) {
-          restoredCells[`${placement.r + placement.dr * index}-${placement.c + placement.dc * index}`] = PLAYER_COLORS[0];
-        }
+        const ownerId = restoredWordOwners[placement.word];
+        const color = gameMode === 'race' && Number(ownerId) !== Number(entityId(user)) ? PLAYER_COLORS[1] : PLAYER_COLORS[0];
+        restoredColors[placement.word] = color;
+        placement.cells.forEach(([r, c]) => { restoredCells[`${r}-${c}`] = color; });
       });
       setGridData(nextGrid);
+      setWordOwners(restoredWordOwners);
       setFound(restoredFound);
       latestFoundRef.current = restoredFound;
       setDoneCells(restoredCells);
       setWordColors(restoredColors);
-      const restoredScores = [restoredFound.length, Number(overrides.opponentScore || 0)];
+      const restoredScores = gameMode === 'race'
+        ? [
+          Object.values(restoredWordOwners).filter((ownerId) => Number(ownerId) === Number(entityId(user))).length,
+          Object.values(restoredWordOwners).filter((ownerId) => Number(ownerId) !== Number(entityId(user))).length,
+        ]
+        : [restoredFound.length, Number(overrides.opponentScore || 0)];
       setScores(restoredScores);
       latestScoresRef.current = restoredScores;
-      const initialElapsed = gameMode === 'versus'
+      const initialElapsed = isOnlineMode(gameMode)
         ? Math.max(0, Number(overrides.elapsedSeconds ?? match?.ProtekloSekundi ?? 0))
         : 0;
       setElapsed(initialElapsed);
       latestElapsedRef.current = initialElapsed;
       gameStartedAtRef.current = Date.now() - initialElapsed * 1000;
       setScreen('game');
+      if (!musicMuted) startAmbientMusic();
       if (gameMode === 'solo') startSoloLimitTimer(initialElapsed);
-      if (gameMode === 'versus') localStorage.setItem('ukrstene-active-match', String(entityId(match)));
+      if (isOnlineMode(gameMode)) localStorage.setItem('ukrstene-active-match', String(entityId(match)));
       timerRef.current = window.setInterval(() => {
         const nextElapsed = Math.max(0, Math.floor((Date.now() - gameStartedAtRef.current) / 1000));
         if (gameMode === 'solo' && nextElapsed >= SOLO_GAME_LIMIT_SECONDS) {
@@ -815,7 +1253,21 @@ function App() {
       }
       return true;
     } catch (err) {
-      if (gameMode === 'versus' && overrides.resume && entityId(match) && user) {
+      console.error('[Osmosmerka] Pokretanje meca nije uspjelo', {
+        message: err?.message,
+        stack: err?.stack,
+        gameMode,
+        selectedBoardMode,
+        resume: Boolean(overrides.resume),
+        match: debugMatchPayload(match),
+        overrides,
+      });
+      if (isOnlineMode(gameMode) && overrides.resume && entityId(match) && user) {
+        console.error('[Osmosmerka] Pokvareni mec se cisti automatski', {
+          reason: err?.message || String(err),
+          match: debugMatchPayload(match),
+          userId: entityId(user),
+        });
         localStorage.removeItem('ukrstene-active-match');
         setActiveMatch(null);
         setOnlineOpponent(null);
@@ -829,16 +1281,17 @@ function App() {
           points: 0,
         }).catch(() => null);
         refreshSocial();
-        setNotice('Pokvareni mec je ociscen. Mozes normalno nastaviti.');
+        setNotice('Pokvareni meč je očišćen. Možeš normalno nastaviti.');
         setError('');
         setScreen('home');
         setActiveTab('play');
         return false;
       }
       stopSoloLimitTimer();
+      stopAmbientMusic();
       if (/4 do \d+ slova|moraju imati/i.test(String(err.message || ''))) {
         setError('');
-        setNotice('AI je vratio neispravne rijeci. Pokreni generisanje ponovo.');
+        setNotice('AI je vratio neispravne riječi. Pokreni generisanje ponovo.');
         setScreen('home');
         setActiveTab('play');
         return false;
@@ -852,27 +1305,75 @@ function App() {
 
   function startSelection(r, c) {
     initSound();
+    if (boardMode === 'zmijica' && doneCells[`${r}-${c}`]) return;
     setSelectionStart({ r, c });
+    selectionCellsRef.current = [[r, c]];
     setSelectionCells([[r, c]]);
   }
 
   function moveSelection(r, c) {
     if (!selectionStart) return;
-    setSelectionCells(cellsForSelection(selectionStart, { r, c }));
+    if (boardMode === 'zmijica') {
+      const current = selectionCellsRef.current;
+      const [lastR, lastC] = current[current.length - 1];
+      if (lastR === r && lastC === c) return;
+      const previous = current[current.length - 2];
+      let next = current;
+      if (previous?.[0] === r && previous?.[1] === c) next = current.slice(0, -1);
+      else if (!doneCells[`${r}-${c}`]
+        && !current.some(([cellR, cellC]) => cellR === r && cellC === c)
+        && Math.max(Math.abs(lastR - r), Math.abs(lastC - c)) === 1) next = [...current, [r, c]];
+      if (next !== current) {
+        selectionCellsRef.current = next;
+        setSelectionCells(next);
+      }
+      return;
+    }
+    const next = cellsForSelection(selectionStart, { r, c });
+    selectionCellsRef.current = next;
+    setSelectionCells(next);
   }
 
   async function endSelection() {
-    if (!selectionStart || selectionCells.length === 0) return;
-    const word = getSelectedWord(gridData.grid, selectionCells);
+    const currentSelection = selectionCellsRef.current;
+    if (!selectionStart || currentSelection.length === 0) return;
+    const word = getSelectedWord(gridData.grid, currentSelection);
     const reversed = word.split('').reverse().join('');
     const match = gridData.words.find((candidate) => (candidate === word || candidate === reversed) && !found.includes(candidate));
 
     if (match) {
+      if (mode === 'race' && entityId(activeMatch) && user) {
+        try {
+          const attemptedFound = [...found, match];
+          const progressResult = await updateMatchProgress(entityId(activeMatch), {
+            userId: entityId(user),
+            foundWords: attemptedFound,
+            elapsedSeconds: elapsed,
+            finished: attemptedFound.length === gridData.words.length,
+            powerUpPenalty,
+            points: (ownFoundCount + 1) * POINTS_PER_WORD - powerUpPenalty,
+          });
+          if (progressResult?.winnerUserId !== undefined) {
+            playSuccessSound();
+            showVersusResult(progressResult);
+          } else {
+            const nextState = applyRaceProgress(progressResult);
+            if (Number(nextState.owners[match]) === Number(entityId(user))) playSuccessSound();
+            else playFailSound();
+          }
+        } catch {
+          playFailSound();
+        }
+        setSelectionStart(null);
+        selectionCellsRef.current = [];
+        setSelectionCells([]);
+        return;
+      }
       playSuccessSound();
       const nextFound = [...found, match];
       const nextDoneCells = { ...doneCells };
       const foundColor = mode === 'multiplayer' ? PLAYER_COLORS[currentPlayer] : mode === 'versus' ? PLAYER_COLORS[0] : 'var(--teal)';
-      for (const [r, c] of selectionCells) nextDoneCells[`${r}-${c}`] = foundColor;
+      for (const [r, c] of currentSelection) nextDoneCells[`${r}-${c}`] = foundColor;
       setFound(nextFound);
       latestFoundRef.current = nextFound;
       setDoneCells(nextDoneCells);
@@ -905,16 +1406,47 @@ function App() {
       } else if (nextFound.length === gridData.words.length) {
         window.setTimeout(() => finishGame(nextFound, scores), 500);
       }
-    } else if (selectionCells.length > 1) {
+    } else if (currentSelection.length > 1) {
       playFailSound();
     }
     setSelectionStart(null);
+    selectionCellsRef.current = [];
     setSelectionCells([]);
+  }
+
+  function getSnakeTouchTarget(touch) {
+    const current = selectionCellsRef.current;
+    if (boardMode !== 'zmijica' || !current.length) return null;
+    const [lastR, lastC] = current[current.length - 1];
+    const hit = document.elementFromPoint(touch.clientX, touch.clientY);
+    const cell = hit?.closest?.('[data-cell]');
+    if (!cell) return null;
+
+    const r = Number(cell.dataset.r);
+    const c = Number(cell.dataset.c);
+    if (lastR === r && lastC === c) return null;
+    if (Math.max(Math.abs(lastR - r), Math.abs(lastC - c)) !== 1) return null;
+
+    const rect = cell.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const centerRadius = Math.min(rect.width, rect.height) * 0.34;
+    const dx = touch.clientX - centerX;
+    const dy = touch.clientY - centerY;
+    if (Math.hypot(dx, dy) > centerRadius) return null;
+
+    return { r, c };
   }
 
   function handleTouchMove(event) {
     event.preventDefault();
     const touch = event.touches[0];
+    const snakeTarget = getSnakeTouchTarget(touch);
+    if (snakeTarget) {
+      moveSelection(snakeTarget.r, snakeTarget.c);
+      return;
+    }
+    if (boardMode === 'zmijica') return;
     const hit = document.elementFromPoint(touch.clientX, touch.clientY);
     const cell = hit?.closest?.('[data-cell]');
     if (cell) moveSelection(Number(cell.dataset.r), Number(cell.dataset.c));
@@ -946,10 +1478,7 @@ function App() {
     const placement = randomUnfoundPlacement();
     if (!placement) return;
 
-    const path = [];
-    for (let index = 0; index < placement.word.length; index++) {
-      path.push(`${placement.r + placement.dr * index}-${placement.c + placement.dc * index}`);
-    }
+    const path = placement.cells.map(([r, c]) => `${r}-${c}`);
 
     setPowerUpsUsed((current) => {
       const next = { ...current, helperPath: true };
@@ -961,9 +1490,22 @@ function App() {
     helperPathTimerRef.current = window.setTimeout(() => setHelperPathCells([]), 3000);
   }
 
-  async function sendVersusChallenge() {
-    if (!selectedVersusFriend || challengeSending || selectedOutgoingChallenge) {
-      if (selectedOutgoingChallenge) return;
+  async function sendChallengeWithSettings({
+    opponent,
+    challengeMode,
+    selectedTheme,
+    selectedDiff,
+    selectedBoardMode,
+    selectedCustomTheme,
+  }) {
+    const existingChallenge = social.outgoingChallenges.find(
+      (item) => Number(item.Protivnik_ID) === entityId(opponent),
+    );
+    if (!opponent || challengeSending || existingChallenge) {
+      if (existingChallenge) {
+        setNotice('Zahtjev je već poslat ovom igraču.');
+        return;
+      }
       setError('Izaberi prijatelja kojeg želiš da izazoveš.');
       return;
     }
@@ -971,27 +1513,29 @@ function App() {
     setError('');
     setNotice('Pripremam iste riječi za oba igrača...');
     try {
-      const isCustomTheme = Boolean(customTheme.trim());
-      const challengeWords = isCustomTheme
-        ? await fetchWords(
-          customTheme.trim(),
-          theme.id,
-          diff.wc,
-          import.meta.env.VITE_GEMINI_API_KEY,
-          true,
-          Math.min(diff.n, 12),
-        )
-        : [];
+      const customThemeValue = selectedCustomTheme?.trim() || '';
+      const isCustomTheme = Boolean(customThemeValue);
+      const challengeWords = await fetchWords(
+        isCustomTheme ? customThemeValue : displayThemeLabel(selectedTheme.label),
+        isCustomTheme ? selectedTheme.id : selectedTheme.id,
+        selectedDiff.wc,
+        import.meta.env.VITE_GEMINI_API_KEY,
+        isCustomTheme,
+        Math.min(selectedDiff.n, 12),
+        wordFetchOptionsForBoard(selectedBoardMode, selectedDiff),
+      );
       const createdChallenge = await createChallenge({
         challengerId: entityId(user),
-        opponentId: entityId(selectedVersusFriend),
-        themeId: isCustomTheme ? null : theme.id,
-        customTheme: isCustomTheme ? customTheme.trim() : null,
+        opponentId: entityId(opponent),
+        themeId: isCustomTheme ? null : selectedTheme.id,
+        customTheme: isCustomTheme ? customThemeValue : null,
         words: challengeWords,
-        difficultyId: diff.id,
-        wordCount: isCustomTheme ? challengeWords.length : diff.wc,
-        gridSize: diff.n,
-        timeLimitSeconds: 300,
+        difficultyId: selectedDiff.id,
+        wordCount: isCustomTheme ? challengeWords.length : selectedDiff.wc,
+        gridSize: selectedDiff.n,
+        timeLimitSeconds: challengeMode === 'race' ? 0 : 300,
+        gameType: selectedBoardMode,
+        matchMode: challengeMode === 'race' ? 'race' : 'versus',
       });
       setChallengeClock(Date.now());
       setSocial((current) => ({
@@ -1000,10 +1544,10 @@ function App() {
           createdChallenge,
           ...current.outgoingChallenges.filter((item) => entityId(item) !== entityId(createdChallenge)),
         ],
-      }));
+      }));  
       setNotice('');
-      setOnlineOpponent(selectedVersusFriend);
-      setMode('versus');
+      setOnlineOpponent(opponent);
+      setMode(challengeMode === 'race' ? 'race' : 'versus');
       setActiveMatch(null);
     } catch (err) {
       setNotice('');
@@ -1011,6 +1555,17 @@ function App() {
     } finally {
       setChallengeSending(false);
     }
+  }
+
+  async function sendVersusChallenge() {
+    await sendChallengeWithSettings({
+      opponent: selectedVersusFriend,
+      challengeMode: mode,
+      selectedTheme: theme,
+      selectedDiff: diff,
+      selectedBoardMode: boardMode,
+      selectedCustomTheme: customTheme,
+    });
   }
 
   async function acceptIncomingChallenge(challenge) {
@@ -1047,7 +1602,10 @@ function App() {
   async function resumeVersusMatch(match) {
     const matchTheme = themeOptions.find((item) => item.id === match.Tema_ID) || theme;
     const matchDiff = DIFFICULTIES.find((item) => item.id === match.Tezina) || defaultDiff;
-    setMode('versus');
+    const matchBoardMode = match.VrstaIgre === 'zmijica' ? 'zmijica' : 'obican';
+    const matchMode = match.ModMeca === 'race' ? 'race' : 'versus';
+    setMode(matchMode);
+    setBoardMode(matchBoardMode);
     setActiveMatch(match);
     setOnlineOpponent({ korisnickoIme: match.ProtivnikIme });
     setTheme(matchTheme);
@@ -1059,8 +1617,10 @@ function App() {
       diff: matchDiff,
       words: parseStoredWords(match.RijeciJson),
       themeLabel: match.TemaNaziv,
-      gameMode: 'versus',
+      gameMode: matchMode,
+      boardMode: matchBoardMode,
       foundWords: parseStoredWords(match.MojeRijeciJson),
+      wordOwners: match.OsvojeneRijeciJson,
       opponentScore: match.ProtivnikBrojPronadjenih,
       resume: true,
     });
@@ -1087,10 +1647,14 @@ function App() {
   }
 
   const navItems = [
-    ['play', 'Igra', Gamepad2],
-    ['friends', 'Prijatelji', Users],
-    ['challenges', 'Izazovi', Swords],
-    ['leaderboard', 'Rang lista', Trophy],
+    ...(isAdmin
+      ? [['admin', 'Admin', ShieldCheck]]
+      : [
+        ['play', 'Igra', Gamepad2],
+        ['friends', 'Prijatelji', Users],
+        ['challenges', 'Izazovi', Swords],
+        ['leaderboard', 'Rang lista', Trophy],
+      ]),
   ];
 
   return (
@@ -1159,6 +1723,7 @@ function App() {
                   setNotice('');
                   if (id === 'challenges') setDismissedChallengeId(null);
                   if (id === 'friends') refreshFriendsPage().catch(() => null);
+                  if (id === 'admin') refreshAdmin().catch(() => null);
                 }}
               >
                 <Icon size={18} />
@@ -1174,12 +1739,24 @@ function App() {
 
             {activeTab === 'play' && (
               <section className="content-section">
-                <SectionHeader eyebrow="Nova partija" title="Izaberi mod igre" text="Podešavanja ispod se mijenjaju prema izabranom modu." />
+                <SectionHeader eyebrow="Nova partija" title="Izaberi vrstu igre" text="Izaberi običnu osmosmjerku ili vijugavu Zmijicu." />
+                <div className="board-mode-tabs" role="tablist" aria-label="Vrsta igre">
+                  <button className={boardMode === 'obican' ? 'active' : ''} type="button" onClick={() => { setBoardMode('obican'); setError(''); setNotice(''); }}>
+                    <Rows3 size={19} />
+                    <span>Običan mod</span>
+                  </button>
+                  <button className={boardMode === 'zmijica' ? 'active' : ''} type="button" onClick={() => { setBoardMode('zmijica'); setError(''); setNotice(''); }}>
+                    <Route size={19} />
+                    <span>Zmijica</span>
+                  </button>
+                </div>
+                <div className="settings-heading mode-heading"><span>Broj igrača</span></div>
                 <div className="game-mode-tabs" role="tablist" aria-label="Mod igre">
                   {[
                     ['solo', 'Solo', Gamepad2],
                     ['multiplayer', 'Multiplayer', Users],
                     ['versus', 'Versus', Swords],
+                    ['race', 'Ko će brže', Trophy],
                   ].map(([id, label, Icon]) => (
                     <button className={mode === id ? 'active' : ''} key={id} type="button" onClick={() => { setMode(id); setError(''); setNotice(''); }}>
                       <Icon size={19} />
@@ -1200,7 +1777,7 @@ function App() {
                     <>
                       <div className="mode-intro">
                         <div className="mode-intro-icon multiplayer"><Users size={21} /></div>
-                        <div><strong>Lokalni multiplayer</strong><span>Ti si prvi igrač. Unesi samo ime drugog igrača.</span></div>
+                        <div><strong>Lokalni multiplayer</strong><span>Ti si prvi igra?. Unesi samo ime drugog igrača.</span></div>
                       </div>
                       <label className="field opponent-field">
                         <span className="label">Ime drugog igrača</span>
@@ -1213,11 +1790,16 @@ function App() {
                     </>
                   )}
 
-                  {mode === 'versus' && (
+                  {isOnlineMode(mode) && (
                     <>
                       <div className="mode-intro">
-                        <div className="mode-intro-icon versus"><Swords size={21} /></div>
-                        <div><strong>Versus protiv prijatelja</strong><span>Izaberi prijatelja, temu i težinu, pa pošalji izazov.</span></div>
+                        <div className={`mode-intro-icon ${mode === 'race' ? 'race' : 'versus'}`}>
+                          {mode === 'race' ? <Trophy size={21} /> : <Swords size={21} />}
+                        </div>
+                        <div>
+                          <strong>{mode === 'race' ? 'Ko će brže' : 'Versus protiv prijatelja'}</strong>
+                          <span>{mode === 'race' ? 'Ista tabla za oba igrača. Prvi koji pronađe riječ osvaja bod za nju.' : 'Izaberi prijatelja, temu i težinu, pa pošalji izazov.'}</span>
+                        </div>
                       </div>
                       <div className="settings-block versus-friends">
                         <div className="settings-heading"><span>Izaberi prijatelja</span></div>
@@ -1266,11 +1848,11 @@ function App() {
                     <label className="field">
                       <span className="label">Tema po tvom izboru</span>
                       <input className="input" value={customTheme} onChange={(event) => setCustomTheme(event.target.value)} placeholder="NBA kosarka, svemir, filmovi..." />
-                      <small>{mode === 'versus' ? 'Gemini generiše riječi jednom, a oba igrača dobijaju istu igru.' : 'Unesena tema ide direktno AI generatoru.'}</small>
+                      <small>{isOnlineMode(mode) ? 'Za unesenu temu Gemini priprema isti set za oba igraca.' : 'Samo unesena tema ide AI generatoru; ponudjene teme koriste bazu.'}</small>
                     </label>
                   </div>
 
-                  {mode === 'versus' ? (
+                  {isOnlineMode(mode) ? (
                     <button className={`btn ${selectedOutgoingChallenge || challengeSending ? 'btn-sent' : 'btn-primary'}`} type="button" onClick={sendVersusChallenge} disabled={!selectedVersusFriend || Boolean(selectedOutgoingChallenge) || challengeSending}>
                       <Check size={18} />
                       {selectedOutgoingChallenge || challengeSending ? 'Zahtjev poslat' : 'Pošalji izazov'}
@@ -1352,7 +1934,7 @@ function App() {
                 <div className="surface">
                   
                   {social.history.length === 0 ? (
-                    <EmptyState icon={History} title="Nema odigranih mečeva" text="Završene versus partije pojaviće se ovdje." />
+                    <EmptyState icon={History} title="Nema odigranih mečeva" text="Završene versus partije pojaviše se ovdje." />
                   ) : (
                     <div className="data-list scroll-list">
                       {social.history.map((item) => {
@@ -1392,6 +1974,132 @@ function App() {
               </section>
             )}
 
+            {activeTab === 'admin' && isAdmin && (
+              <section className="content-section admin-panel">
+                <SectionHeader eyebrow="Kontrola" title="Admin panel" text="Upravljanje temama i riječima iz baze." />
+
+                <div className="admin-grid">
+                  <div className="surface">
+                    <div className="surface-title"><h3>{editingThemeId ? 'Izmijeni temu' : 'Dodaj temu'}</h3></div>
+                    <div className="form-grid admin-theme-form">
+                      <label className="field">
+                        <span className="label">Naziv</span>
+                        <input className="input" value={themeForm.label} onChange={(event) => setThemeForm({ ...themeForm, label: event.target.value })} placeholder="Priroda" />
+                      </label>
+                    </div>
+                    <div className="admin-actions">
+                      <button className="btn btn-teal compact" type="button" onClick={saveAdminTheme} disabled={adminLoading || !themeForm.label.trim()}>
+                        {editingThemeId ? 'Sačuvaj' : 'Dodaj'}
+                      </button>
+                      {editingThemeId && (
+                        <button className="btn btn-outline compact" type="button" onClick={() => { setEditingThemeId(null); setThemeForm(emptyThemeForm); }}>
+                          <X size={17} />Odustani
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="surface">
+                    <div className="surface-title"><h3>{editingWordId ? 'Izmijeni riječ' : 'Dodaj riječ'}</h3></div>
+                    <div className="form-grid admin-word-form">
+                      <label className="field">
+                        <span className="label">Tema</span>
+                        <select className="input" value={wordForm.themeId} onChange={(event) => setWordForm({ ...wordForm, themeId: event.target.value })}>
+                          <option value="">Izaberi temu</option>
+                          {adminData.themes.map((item) => <option key={item.id} value={item.id}>{displayThemeLabel(item.label)}</option>)}
+                        </select>
+                      </label>
+                      <label className="field">
+                        <span className="label">Riječ</span>
+                        <input className="input" value={wordForm.word} onChange={(event) => setWordForm({ ...wordForm, word: event.target.value })} placeholder="PLANINA" />
+                      </label>
+                    </div>
+                    <div className="admin-actions">
+                      <button className="btn btn-teal compact" type="button" onClick={saveAdminWord} disabled={adminLoading || !wordForm.themeId || !wordForm.word.trim()}>
+                        {editingWordId ? 'Sačuvaj' : 'Dodaj'}
+                      </button>
+                      {editingWordId && (
+                        <button className="btn btn-outline compact" type="button" onClick={() => { setEditingWordId(null); setWordForm(emptyWordForm); }}>
+                          <X size={17} />Odustani
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="surface">
+                  <div className="surface-title"><h3>Teme</h3><span>{filteredAdminThemes.length}</span></div>
+                  <label className="search-bar admin-search">
+                    <Search size={18} />
+                    <input value={adminThemeSearch} onChange={(event) => setAdminThemeSearch(event.target.value)} placeholder="Pretraži teme po nazivu" />
+                    {adminThemeSearch && <button type="button" onClick={() => setAdminThemeSearch('')} title="Očisti pretragu" aria-label="Očisti pretragu"><X size={16} /></button>}
+                  </label>
+                  {filteredAdminThemes.length === 0 ? (
+                    <EmptyState icon={ShieldCheck} title={adminThemeSearch ? 'Nema rezultata' : 'Nema tema'} text={adminThemeSearch ? 'Nijedna tema ne odgovara pretrazi.' : 'Dodaj prvu temu kroz formu iznad.'} />
+                  ) : (
+                    <div className="data-list scroll-list admin-list">
+                      {filteredAdminThemes.map((item) => (
+                        <div className="data-row admin-row" key={item.id}>
+                          <div className="avatar"><ShieldCheck size={17} /></div>
+                          <div className="row-copy">
+                            <strong>{displayThemeLabel(item.label)}</strong>
+                            <span>{item.wordCount ?? 0} riječi</span>
+                          </div>
+                          <div className="row-buttons">
+                            <button className="row-action" type="button" onClick={() => { setEditingThemeId(item.id); setThemeForm({ label: displayThemeLabel(item.label) }); }}>
+                              <Pencil size={16} />Izmijeni
+                            </button>
+                            <button className="row-action danger" type="button" onClick={() => removeAdminTheme(item.id)}>
+                              <Trash2 size={16} />Obriši
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="surface">
+                  <div className="surface-title"><h3>Riječi iz baze</h3><span>{filteredAdminWords.length}</span></div>
+                  <div className="admin-filter-bar">
+                    <label className="search-bar admin-search">
+                      <Search size={18} />
+                      <input value={adminWordSearch} onChange={(event) => setAdminWordSearch(event.target.value)} placeholder="Pretraži riječi" />
+                      {adminWordSearch && <button type="button" onClick={() => setAdminWordSearch('')} title="Očisti pretragu" aria-label="Očisti pretragu"><X size={16} /></button>}
+                    </label>
+                    <select className="input admin-theme-filter" value={adminWordThemeFilter} onChange={(event) => setAdminWordThemeFilter(event.target.value)} aria-label="Filtriraj riječi po temi">
+                      <option value="">Sve teme</option>
+                      {adminData.themes.map((item) => <option key={item.id} value={item.id}>{displayThemeLabel(item.label)}</option>)}
+                    </select>
+                  </div>
+                  {filteredAdminWords.length === 0 ? (
+                    <EmptyState icon={Plus} title={adminWordSearch || adminWordThemeFilter ? 'Nema rezultata' : 'Nema riječi'} text={adminWordSearch || adminWordThemeFilter ? 'Nijedna riječ ne odgovara izabranim filterima.' : 'Dodaj riječi za izabranu temu.'} />
+                  ) : (
+                    <div className="data-list scroll-list admin-list tall">
+                      {filteredAdminWords.map((item) => (
+                        <div className="data-row admin-row" key={item.ID}>
+                          <div className="avatar">{String(item.Rijec || '?').slice(0, 1)}</div>
+                          <div className="row-copy">
+                            <strong>{item.Rijec}</strong>
+                            <span>{displayThemeLabel(item.TemaNaziv || item.Tema_ID)}</span>
+                          </div>
+                          <div className="row-buttons">
+                            <button className="row-action" type="button" onClick={() => { setEditingWordId(item.ID); setWordForm({ themeId: item.Tema_ID || '', word: item.Rijec || '' }); }}>
+                              <Pencil size={16} />Izmijeni
+                            </button>
+                            <button className="row-action danger" type="button" onClick={() => removeAdminWord(item.ID)}>
+                              <Trash2 size={16} />Obriši
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+              </section>
+            )}
+
           </main>
         </div>
       </Screen>
@@ -1404,8 +2112,9 @@ function App() {
       </Screen>
 
       <Screen active={screen === 'game'} className="game-screen">
-        <header className="game-header">
-          <div><div className="game-theme">{currentThemeLabel}</div><div className="timer">{formatTime(elapsed)}</div></div>
+        <header className={`game-header ${isOnlineMode(mode) ? 'online-game-header' : ''}`}>
+          <div className="game-primary"><div className="game-theme">{currentThemeLabel}</div><div className="timer">{formatTime(elapsed)}</div></div>
+          <div className="game-status">
           {mode === 'multiplayer' && <div className="stat-pill">Potez: <span>{turnLeft}</span>s</div>}
           {mode === 'solo' ? <div className="stat-pill">Nađeno: <span>{found.length}</span>/<span>{gridData.words.length}</span></div> : (
             <div className="duo-score">
@@ -1415,16 +2124,26 @@ function App() {
             </div>
           )}
           <div className="stat-pill points-pill">Bodovi: <span>{playerPoints}</span></div>
-          {mode === 'versus'
+          <button
+            className={`music-toggle ${musicMuted ? 'muted' : ''}`}
+            type="button"
+            onClick={toggleMusicMute}
+            aria-label={musicMuted ? 'Uključi muziku' : 'Utišaj muziku'}
+            title={musicMuted ? 'Uključi muziku' : 'Utišaj muziku'}
+          >
+            {musicMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+          </button>
+          {isOnlineMode(mode)
             ? <button className="btn btn-outline compact exit-match" type="button" onClick={() => setConfirmExit(true)}><LogOut size={16} />Izađi iz igre</button>
             : <button className="btn btn-outline compact" type="button" onClick={() => finishGame()}>Završi</button>}
+          </div>
         </header>
         {mode === 'multiplayer' && <div className="current-turn">Na potezu: {currentPlayer === 0 ? names.p1 : names.p2}</div>}
-        {mode !== 'multiplayer' && (
+        {mode !== 'multiplayer' && mode !== 'race' && (
           <div className="power-ups">
             <button className="power-up" type="button" disabled={powerUpsUsed.firstLetter || found.length === gridData.words.length} onClick={useFirstLetterPowerUp}>
               <Sparkles size={19} />
-              <span><strong>Prvo slovo</strong><small>Označi 3 sekunde · -{POWER_UP_PENALTY} bodova</small></span>
+              <span><strong>Prvo slovo</strong><small>Označi 3 sekunde ? -{POWER_UP_PENALTY} bodova</small></span>
               <b>{powerUpsUsed.firstLetter ? 'Iskorišćeno' : '1x'}</b>
             </button>
             <button className="power-up" type="button" disabled={powerUpsUsed.helperPath || found.length === gridData.words.length} onClick={useHelperPathPowerUp}>
@@ -1434,12 +2153,18 @@ function App() {
             </button>
           </div>
         )}
-        <div className="grid-wrap"><div className="grid" style={{ gridTemplateColumns: `repeat(${gridData.grid.length}, ${cellSize}px)`, gap: `${gridGap}px` }} onMouseLeave={() => selectionStart && setSelectionCells([[selectionStart.r, selectionStart.c]])} onTouchMove={handleTouchMove} onTouchEnd={endSelection}>
+        <div className="grid-wrap"><div className="grid" style={{ gridTemplateColumns: `repeat(${gridData.grid.length}, ${cellSize}px)`, gap: `${gridGap}px` }} onMouseLeave={() => selectionStart && boardMode === 'obican' && setSelectionCells([[selectionStart.r, selectionStart.c]])} onTouchMove={handleTouchMove} onTouchEnd={endSelection}>
           {gridData.grid.map((row, r) => row.map((letter, c) => {
             const key = `${r}-${c}`;
             const doneColor = doneCells[key];
+            const snakeIndex = snakeLetterIndexes[key];
             const pathDimmed = helperPathKeys.size > 0 && !helperPathKeys.has(key);
-            return <button className={`cell ${selectedKeys.has(key) ? 'preview' : ''} ${doneColor ? 'done' : ''} ${hintFirstCell === key ? 'hint-first' : ''} ${pathDimmed ? 'path-dimmed' : ''}`} data-cell data-r={r} data-c={c} key={key} onMouseDown={(e) => { e.preventDefault(); startSelection(r, c); }} onMouseEnter={() => moveSelection(r, c)} onMouseUp={endSelection} onTouchStart={(e) => { e.preventDefault(); startSelection(r, c); }} style={{ width: cellSize, height: cellSize, fontSize: Math.max(10, Math.min(cellSize * 0.52, 22)), background: doneColor || undefined }} type="button">{letter}</button>;
+            return (
+              <button className={`cell ${selectedKeys.has(key) ? 'preview' : ''} ${doneColor ? 'done' : ''} ${snakeIndex ? 'snake-indexed' : ''} ${hintFirstCell === key ? 'hint-first' : ''} ${pathDimmed ? 'path-dimmed' : ''}`} data-cell data-r={r} data-c={c} key={key} onMouseDown={(e) => { e.preventDefault(); startSelection(r, c); }} onMouseEnter={() => moveSelection(r, c)} onMouseUp={endSelection} onTouchStart={(e) => { e.preventDefault(); startSelection(r, c); }} style={{ width: cellSize, height: cellSize, fontSize: Math.max(10, Math.min(cellSize * 0.52, 22)), background: doneColor || undefined }} type="button">
+                <span className="cell-letter">{letter}</span>
+                {snakeIndex && <span className="cell-index">{snakeIndex}</span>}
+              </button>
+            );
           }))}
         </div></div>
         <div className="words-panel">
@@ -1474,7 +2199,7 @@ function App() {
               <X size={18} />
             </button>
             <div className="challenge-emblem"><Swords size={28} /></div>
-            <span className="challenge-kicker">{incomingChallenge ? 'Novi Versus izazov' : 'Izazov je poslat'}</span>
+            <span className="challenge-kicker">{incomingChallenge ? `Novi ${modeLabel(challengeDialog.ModMeca)} izazov` : `${modeLabel(challengeDialog.ModMeca)} izazov je poslat`}</span>
             <h2>
               {incomingChallenge
                 ? `${incomingChallenge.IzazivacIme} te izaziva`
@@ -1483,6 +2208,7 @@ function App() {
             <div className="challenge-details">
               <div><span>Tema</span><strong>{displayThemeLabel(challengeDialog.TemaNaziv)}</strong></div>
               <div><span>Težina</span><strong>{challengeDifficulty?.label || challengeDialog.Tezina}</strong></div>
+              <div><span>Mod</span><strong>{modeLabel(challengeDialog.ModMeca)}</strong></div>
             </div>
             <div className={`challenge-countdown ${challengeSecondsLeft <= 3 ? 'urgent' : ''}`}>
               Vrijeme za odgovor: <strong>{challengeSecondsLeft}s</strong>
@@ -1502,7 +2228,25 @@ function App() {
         </div>
       )}
 
-      {result && <div className="overlay"><div className="modal"><div className="modal-icon"><Trophy size={34} /></div><h2>{result.title}</h2><div className="score-big">{result.score}</div><p>{result.message}</p><button className="btn btn-teal" type="button" onClick={() => { setResult(null); setScreen('home'); refreshSocial(); }}>Igraj ponovo</button><button className="btn btn-outline" type="button" onClick={goHome}>Početna</button></div></div>}
+      {result && <div className="overlay"><div className="modal"><div className="modal-icon"><Trophy size={34} /></div><h2>{result.title}</h2><div className="score-big">{result.score}</div><p>{result.message}</p><button className="btn btn-teal" type="button" onClick={playAgainFromResult}>Igraj ponovo</button><button className="btn btn-outline" type="button" onClick={goHome}>Početna</button></div></div>}
+      {result && incomingChallenge && entityId(incomingChallenge) !== dismissedChallengeId && (
+        <div className="overlay result-rematch-overlay">
+          <div className="modal">
+            <div className="modal-icon"><Swords size={34} /></div>
+            <h2>Nova partija?</h2>
+            <p>
+              {(incomingChallenge.IzazivacIme || 'Protivnik')} želi revanš.
+              {'\n'}Tema: {displayThemeLabel(incomingChallenge.TemaNaziv)}
+              {'\n'}Mod: {modeLabel(incomingChallenge.ModMeca)}
+            </p>
+            <div className="result-rematch-actions">
+              <button className="btn btn-outline" type="button" onClick={() => rejectIncomingChallenge(incomingChallenge)}><X size={18} />Odbij</button>
+              <button className="btn btn-teal" type="button" disabled={challengeSecondsLeft === 0} onClick={() => acceptIncomingChallenge(incomingChallenge)}><Check size={18} />Prihvati</button>
+            </div>
+            <button className="btn btn-outline" type="button" onClick={goHome}>Početni ekran</button>
+          </div>
+        </div>
+      )}
       {turnPopup && <div className="overlay"><div className="modal small-modal"><div className="modal-icon">...</div><h2>{turnPopup.title}</h2><p>{turnPopup.message}</p></div></div>}
     </>
   );

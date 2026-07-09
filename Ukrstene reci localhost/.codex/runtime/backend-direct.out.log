@@ -1,0 +1,24 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.0.3)
+
+2026-07-03T22:10:25.058+02:00  INFO 16816 --- [UkrsteneReci] [           main] c.e.u.UkrsteneReciApplication            : Starting UkrsteneReciApplication v0.0.1-SNAPSHOT using Java 21.0.11 with PID 16816 (C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci localhost\backend\target\ukrstene-reci-backend-0.0.1-SNAPSHOT.jar started by User in C:\Users\User\OneDrive\Desktop\grafika\Ukrstene reci localhost\backend)
+2026-07-03T22:10:25.076+02:00  INFO 16816 --- [UkrsteneReci] [           main] c.e.u.UkrsteneReciApplication            : No active profile set, falling back to 1 default profile: "default"
+2026-07-03T22:10:29.214+02:00  INFO 16816 --- [UkrsteneReci] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8082 (http)
+2026-07-03T22:10:29.263+02:00  INFO 16816 --- [UkrsteneReci] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-07-03T22:10:29.284+02:00  INFO 16816 --- [UkrsteneReci] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.18]
+2026-07-03T22:10:29.427+02:00  INFO 16816 --- [UkrsteneReci] [           main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 4197 ms
+2026-07-03T22:10:32.171+02:00  INFO 16816 --- [UkrsteneReci] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8082 (http) with context path '/'
+2026-07-03T22:10:32.220+02:00  INFO 16816 --- [UkrsteneReci] [           main] c.e.u.UkrsteneReciApplication            : Started UkrsteneReciApplication in 8.145 seconds (process running for 9.623)
+2026-07-03T22:10:32.416+02:00  INFO 16816 --- [UkrsteneReci] [0.0-8082-exec-9] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-07-03T22:10:32.423+02:00  INFO 16816 --- [UkrsteneReci] [0.0-8082-exec-9] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-07-03T22:10:32.431+02:00  INFO 16816 --- [UkrsteneReci] [0.0-8082-exec-9] o.s.web.servlet.DispatcherServlet        : Completed initialization in 6 ms
+2026-07-03T22:10:32.926+02:00  INFO 16816 --- [UkrsteneReci] [0.0-8082-exec-1] com.zaxxer.hikari.HikariDataSource       : ukrstene-pool - Starting...
+2026-07-03T22:10:34.079+02:00  INFO 16816 --- [UkrsteneReci] [0.0-8082-exec-1] com.zaxxer.hikari.pool.HikariPool        : ukrstene-pool - Added connection com.mysql.cj.jdbc.ConnectionImpl@61e4987d
+2026-07-03T22:10:34.089+02:00  INFO 16816 --- [UkrsteneReci] [0.0-8082-exec-1] com.zaxxer.hikari.HikariDataSource       : ukrstene-pool - Start completed.

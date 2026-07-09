@@ -9,14 +9,24 @@
     "dev:backend": "powershell -ExecutionPolicy Bypass -File .\\start-backend-local.ps1",
     "dev:full": "powershell -ExecutionPolicy Bypass -File .\\start-local.ps1",
     "build": "vite build --configLoader native",
+    "mobile:build": "vite build --mode mobile --configLoader native",
+    "mobile:sync": "npm run mobile:build && cap sync android",
+    "mobile:open": "cap open android",
+    "mobile:run": "npm run mobile:sync && cap run android",
+    "mobile:apk": "npm run mobile:sync && cd android && gradlew.bat assembleDebug --no-daemon",
     "preview": "vite preview --configLoader native"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/core": "^8.4.1",
+    "@capacitor/local-notifications": "^8.2.0",
     "lucide-react": "^1.16.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.4.1",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
     "vite": "^8.0.14"

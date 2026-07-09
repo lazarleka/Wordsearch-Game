@@ -21,6 +21,7 @@ public class AuthRepository {
         k.setIme(rs.getString("Ime"));
         k.setPrezime(rs.getString("Prezime"));
         k.setEmail(rs.getString("Email"));
+        k.setUloga(rs.getString("Uloga"));
         k.setAvatarBoja(rs.getString("AvatarBoja"));
         k.setUkupnoPobjeda(rs.getInt("UkupnoPobjeda"));
         k.setUkupnoPoraza(rs.getInt("UkupnoPoraza"));
@@ -29,14 +30,15 @@ public class AuthRepository {
 
     public Korisnik register(Korisnik korisnik) {
         try (Connection conn = DBUtil.open()) {
-            String sql = "INSERT INTO korisnik (KorisnickoIme, Ime, Prezime, Email, LozinkaHash, AvatarBoja) VALUES (?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO korisnik (KorisnickoIme, Ime, Prezime, Email, LozinkaHash, Uloga, AvatarBoja) VALUES (?, ?, ?, ?, ?, ?, ?)";
             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, korisnik.getKorisnickoIme().trim().toLowerCase());
             ps.setString(2, korisnik.getIme());
             ps.setString(3, korisnik.getPrezime());
             ps.setString(4, korisnik.getEmail().trim().toLowerCase());
             ps.setString(5, PasswordUtil.hash(korisnik.getLozinka()));
-            ps.setString(6, korisnik.getAvatarBoja() != null ? korisnik.getAvatarBoja() : "#00e5b4");
+            ps.setString(6, "korisnik");
+            ps.setString(7, korisnik.getAvatarBoja() != null ? korisnik.getAvatarBoja() : "#00e5b4");
             ps.executeUpdate();
 
             ResultSet keys = ps.getGeneratedKeys();
@@ -45,6 +47,17 @@ public class AuthRepository {
             System.out.println(e);
         }
         return null;
+    }
+
+    public boolean isAdmin(int userId) {
+        try (Connection conn = DBUtil.open()) {
+            PreparedStatement ps = conn.prepareStatement("SELECT 1 FROM korisnik WHERE ID=? AND Uloga='admin'");
+            ps.setInt(1, userId);
+            return ps.executeQuery().next();
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+        return false;
     }
 
     public Korisnik login(String email, String password) {
@@ -76,7 +89,7 @@ public class AuthRepository {
     public List<Korisnik> search(String term) {
         List<Korisnik> result = new ArrayList<>();
         try (Connection conn = DBUtil.open()) {
-            PreparedStatement ps = conn.prepareStatement("SELECT * FROM korisnik WHERE LOWER(KorisnickoIme) LIKE ? OR LOWER(Ime) LIKE ? OR LOWER(Email) LIKE ? ORDER BY KorisnickoIme LIMIT 25");
+            PreparedStatement ps = conn.prepareStatement("SELECT * FROM korisnik WHERE Uloga<>'admin' AND (LOWER(KorisnickoIme) LIKE ? OR LOWER(Ime) LIKE ? OR LOWER(Email) LIKE ?) ORDER BY KorisnickoIme LIMIT 25");
             String value = "%" + (term == null ? "" : term.toLowerCase()) + "%";
             ps.setString(1, value);
             ps.setString(2, value);
@@ -100,6 +113,7 @@ public class AuthRepository {
                     "FROM korisnik k " +
                     "LEFT JOIN (SELECT mi.Korisnik_ID, SUM(mi.BrojPronadjenih) UkupnoRijeci, COUNT(*) UkupnoPartija, SUM(mi.Bodovi) UkupnoBodova FROM mec_igrac mi JOIN mec m ON m.ID=mi.Mec_ID WHERE m.Status='zavrsen' GROUP BY mi.Korisnik_ID) v ON v.Korisnik_ID=k.ID " +
                     "LEFT JOIN (SELECT Korisnik_ID, SUM(BrojPronadjenih) UkupnoRijeci, COUNT(*) UkupnoPartija, SUM(Bodovi) UkupnoBodova FROM solo_rezultat GROUP BY Korisnik_ID) s ON s.Korisnik_ID=k.ID " +
+                    "WHERE k.Uloga<>'admin' " +
                     "ORDER BY UkupnoBodova DESC, UkupnoPogodjenihRijeci DESC, k.KorisnickoIme ASC " +
                     "LIMIT 50");
             ResultSet rs = ps.executeQuery();

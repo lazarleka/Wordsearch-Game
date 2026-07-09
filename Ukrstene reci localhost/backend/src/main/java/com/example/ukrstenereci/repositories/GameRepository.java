@@ -46,7 +46,7 @@ public class GameRepository {
     public List<String> getWords(String themeId, int count) {
         List<String> result = new ArrayList<>();
         try (Connection conn = DBUtil.open()) {
-            PreparedStatement ps = conn.prepareStatement("SELECT Rijec FROM tema_rijec WHERE Tema_ID=? ORDER BY RAND() LIMIT ?");
+            PreparedStatement ps = conn.prepareStatement("SELECT Rijec FROM tema_rijec WHERE Tema_ID=? AND CHAR_LENGTH(Rijec) BETWEEN 4 AND 15 ORDER BY RAND() LIMIT ?");
             ps.setString(1, themeId);
             ps.setInt(2, Math.max(1, Math.min(count, 20)));
             ResultSet rs = ps.executeQuery();
@@ -57,7 +57,150 @@ public class GameRepository {
         return result;
     }
 
+    public Map<String, Object> adminDashboard(int adminUserId) {
+        if (!authRepository.isAdmin(adminUserId)) return null;
+        Map<String, Object> result = new HashMap<>();
+        result.put("themes", getThemes());
+        result.put("words", getAdminWords());
+        result.put("submissions", pendingThemeSubmissions());
+        return result;
+    }
+
+    public Map<String, Object> createAdminTheme(Map<String, Object> request) {
+        int adminUserId = intValue(request.get("adminUserId"));
+        if (!authRepository.isAdmin(adminUserId)) return null;
+        String label = textValue(request.get("label"));
+        String id = slugValue(label);
+        if (id.isBlank() || label.isBlank()) return null;
+        try (Connection conn = DBUtil.open()) {
+            PreparedStatement ps = conn.prepareStatement("INSERT INTO tema (ID, Naziv, Staticka, KreiraoKorisnik_ID) VALUES (?, ?, 0, ?) ON DUPLICATE KEY UPDATE Naziv=VALUES(Naziv), Staticka=0");
+            ps.setString(1, id);
+            ps.setString(2, label);
+            ps.setInt(3, adminUserId);
+            ps.executeUpdate();
+            return getThemeById(conn, id);
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+        return null;
+    }
+
+    public Map<String, Object> updateAdminTheme(String oldId, Map<String, Object> request) {
+        int adminUserId = intValue(request.get("adminUserId"));
+        if (!authRepository.isAdmin(adminUserId)) return null;
+        String label = textValue(request.get("label"));
+        String newId = oldId;
+        if (oldId == null || oldId.isBlank() || newId.isBlank() || label.isBlank()) return null;
+        try (Connection conn = DBUtil.open()) {
+            conn.setAutoCommit(false);
+            if (!oldId.equals(newId)) {
+                PreparedStatement insert = conn.prepareStatement("INSERT INTO tema (ID, Naziv, Staticka, KreiraoKorisnik_ID) SELECT ?, ?, Staticka, COALESCE(KreiraoKorisnik_ID, ?) FROM tema WHERE ID=?");
+                insert.setString(1, newId);
+                insert.setString(2, label);
+                insert.setInt(3, adminUserId);
+                insert.setString(4, oldId);
+                if (insert.executeUpdate() == 0) {
+                    conn.rollback();
+                    return null;
+                }
+                updateThemeReference(conn, "tema_rijec", oldId, newId);
+                updateThemeReference(conn, "izazov", oldId, newId);
+                updateThemeReference(conn, "mec", oldId, newId);
+                PreparedStatement delete = conn.prepareStatement("DELETE FROM tema WHERE ID=?");
+                delete.setString(1, oldId);
+                delete.executeUpdate();
+            } else {
+                PreparedStatement update = conn.prepareStatement("UPDATE tema SET Naziv=? WHERE ID=?");
+                update.setString(1, label);
+                update.setString(2, oldId);
+                if (update.executeUpdate() == 0) {
+                    conn.rollback();
+                    return null;
+                }
+            }
+            conn.commit();
+            return getThemeById(conn, newId);
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+        return null;
+    }
+
+    public boolean deleteAdminTheme(int adminUserId, String id) {
+        if (!authRepository.isAdmin(adminUserId) || id == null || id.isBlank()) return false;
+        try (Connection conn = DBUtil.open()) {
+            conn.setAutoCommit(false);
+            clearThemeReference(conn, "izazov", id);
+            clearThemeReference(conn, "mec", id);
+            PreparedStatement delete = conn.prepareStatement("DELETE FROM tema WHERE ID=?");
+            delete.setString(1, id);
+            boolean deleted = delete.executeUpdate() > 0;
+            conn.commit();
+            return deleted;
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+        return false;
+    }
+
+    public Map<String, Object> createAdminWord(Map<String, Object> request) {
+        int adminUserId = intValue(request.get("adminUserId"));
+        if (!authRepository.isAdmin(adminUserId)) return null;
+        String themeId = textValue(request.get("themeId"));
+        String word = normalizeAdminWord(textValue(request.get("word")));
+        String difficulty = textValue(request.get("difficulty")).isBlank() ? "sve" : textValue(request.get("difficulty"));
+        if (themeId.isBlank() || word.length() < 4 || word.length() > 15) return null;
+        try (Connection conn = DBUtil.open()) {
+            PreparedStatement ps = conn.prepareStatement("INSERT INTO tema_rijec (Tema_ID, Rijec, Tezina) VALUES (?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, themeId);
+            ps.setString(2, word);
+            ps.setString(3, difficulty);
+            ps.executeUpdate();
+            return getById(conn, "tema_rijec", ps);
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+        return null;
+    }
+
+    public Map<String, Object> updateAdminWord(int id, Map<String, Object> request) {
+        int adminUserId = intValue(request.get("adminUserId"));
+        if (!authRepository.isAdmin(adminUserId)) return null;
+        String themeId = textValue(request.get("themeId"));
+        String word = normalizeAdminWord(textValue(request.get("word")));
+        String difficulty = textValue(request.get("difficulty")).isBlank() ? "sve" : textValue(request.get("difficulty"));
+        if (id <= 0 || themeId.isBlank() || word.length() < 4 || word.length() > 15) return null;
+        try (Connection conn = DBUtil.open()) {
+            PreparedStatement ps = conn.prepareStatement("UPDATE tema_rijec SET Tema_ID=?, Rijec=?, Tezina=? WHERE ID=?");
+            ps.setString(1, themeId);
+            ps.setString(2, word);
+            ps.setString(3, difficulty);
+            ps.setInt(4, id);
+            if (ps.executeUpdate() == 0) return null;
+            PreparedStatement select = conn.prepareStatement("SELECT * FROM tema_rijec WHERE ID=?");
+            select.setInt(1, id);
+            ResultSet rs = select.executeQuery();
+            return rs.next() ? rowToMap(rs) : null;
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+        return null;
+    }
+
+    public boolean deleteAdminWord(int adminUserId, int id) {
+        if (!authRepository.isAdmin(adminUserId) || id <= 0) return false;
+        try (Connection conn = DBUtil.open()) {
+            PreparedStatement ps = conn.prepareStatement("DELETE FROM tema_rijec WHERE ID=?");
+            ps.setInt(1, id);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+        return false;
+    }
+
     public Map<String, Object> sendFriendRequest(int fromUserId, int toUserId) {
+        if (authRepository.isAdmin(fromUserId) || authRepository.isAdmin(toUserId)) return null;
         try (Connection conn = DBUtil.open()) {
             PreparedStatement existing = conn.prepareStatement("SELECT * FROM prijateljstvo WHERE (Posiljalac_ID=? AND Primalac_ID=?) OR (Posiljalac_ID=? AND Primalac_ID=?)");
             existing.setInt(1, fromUserId);
@@ -100,12 +243,13 @@ public class GameRepository {
     }
 
     public List<Korisnik> getFriends(int userId) {
+        if (authRepository.isAdmin(userId)) return new ArrayList<>();
         List<Korisnik> result = new ArrayList<>();
         try (Connection conn = DBUtil.open()) {
             PreparedStatement ps = conn.prepareStatement(
                     "SELECT k.* FROM prijateljstvo f " +
                     "JOIN korisnik k ON k.ID=CASE WHEN f.Posiljalac_ID=? THEN f.Primalac_ID ELSE f.Posiljalac_ID END " +
-                    "WHERE f.Status='prihvaceno' AND (f.Posiljalac_ID=? OR f.Primalac_ID=?) " +
+                    "WHERE k.Uloga<>'admin' AND f.Status='prihvaceno' AND (f.Posiljalac_ID=? OR f.Primalac_ID=?) " +
                     "ORDER BY k.KorisnickoIme");
             ps.setInt(1, userId);
             ps.setInt(2, userId);
@@ -123,11 +267,17 @@ public class GameRepository {
         List<Korisnik> friends = new ArrayList<>();
         List<Map<String, Object>> friendships = new ArrayList<>();
         List<Korisnik> users = new ArrayList<>();
+        if (authRepository.isAdmin(userId)) {
+            result.put("friends", friends);
+            result.put("friendships", friendships);
+            result.put("users", users);
+            return result;
+        }
         try (Connection conn = DBUtil.open()) {
             PreparedStatement friendsPs = conn.prepareStatement(
                     "SELECT k.* FROM prijateljstvo f " +
                     "JOIN korisnik k ON k.ID=CASE WHEN f.Posiljalac_ID=? THEN f.Primalac_ID ELSE f.Posiljalac_ID END " +
-                    "WHERE f.Status='prihvaceno' AND (f.Posiljalac_ID=? OR f.Primalac_ID=?) " +
+                    "WHERE k.Uloga<>'admin' AND f.Status='prihvaceno' AND (f.Posiljalac_ID=? OR f.Primalac_ID=?) " +
                     "ORDER BY k.KorisnickoIme");
             friendsPs.setInt(1, userId);
             friendsPs.setInt(2, userId);
@@ -150,7 +300,7 @@ public class GameRepository {
             while (friendshipsRs.next()) friendships.add(rowToMap(friendshipsRs));
 
             PreparedStatement usersPs = conn.prepareStatement(
-                    "SELECT * FROM korisnik WHERE ID<>? ORDER BY KorisnickoIme LIMIT 100");
+                    "SELECT * FROM korisnik WHERE ID<>? AND Uloga<>'admin' ORDER BY KorisnickoIme LIMIT 100");
             usersPs.setInt(1, userId);
             ResultSet usersRs = usersPs.executeQuery();
             while (usersRs.next()) users.add(mapUser(usersRs));
@@ -165,6 +315,7 @@ public class GameRepository {
     }
 
     public List<Map<String, Object>> getFriendships(int userId) {
+        if (authRepository.isAdmin(userId)) return new ArrayList<>();
         List<Map<String, Object>> result = new ArrayList<>();
         try (Connection conn = DBUtil.open()) {
             PreparedStatement ps = conn.prepareStatement(
@@ -188,6 +339,7 @@ public class GameRepository {
     }
 
     public Map<String, Object> createChallenge(ChallengeRequest request) {
+        if (authRepository.isAdmin(request.getChallengerId()) || authRepository.isAdmin(request.getOpponentId())) return null;
         try (Connection conn = DBUtil.open()) {
             if (!areFriends(conn, request.getChallengerId(), request.getOpponentId())) return null;
             expireChallenges(conn);
@@ -203,27 +355,33 @@ public class GameRepository {
             ResultSet existingRs = existingPs.executeQuery();
             if (existingRs.next()) return rowToMap(existingRs);
 
-            Set<String> words = cleanWords(request.getWords());
+            int gridSize = request.getGridSize() > 0 ? request.getGridSize() : 15;
+            Set<String> words = cleanWords(request.getWords(), gridSize);
             if (words.isEmpty() && request.getThemeId() != null && !request.getThemeId().isBlank()) {
-                PreparedStatement wordPs = conn.prepareStatement("SELECT Rijec FROM tema_rijec WHERE Tema_ID=? ORDER BY RAND() LIMIT ?");
+                PreparedStatement wordPs = conn.prepareStatement("SELECT Rijec FROM tema_rijec WHERE Tema_ID=? AND CHAR_LENGTH(Rijec) BETWEEN 4 AND ? ORDER BY RAND() LIMIT ?");
                 wordPs.setString(1, request.getThemeId());
-                wordPs.setInt(2, request.getWordCount());
+                wordPs.setInt(2, gridSize);
+                wordPs.setInt(3, request.getWordCount());
                 ResultSet wordRs = wordPs.executeQuery();
                 while (wordRs.next()) words.add(wordRs.getString("Rijec"));
             }
             if (words.isEmpty()) return null;
 
-            PreparedStatement ps = conn.prepareStatement("INSERT INTO izazov (Izazivac_ID, Protivnik_ID, Tema_ID, CustomTema, RijeciJson, Tezina, BrojRijeci, VelicinaMatrice, VremenskoOgranicenjeSekundi, Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'na_cekanju')", Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement ps = conn.prepareStatement("INSERT INTO izazov (Izazivac_ID, Protivnik_ID, Tema_ID, CustomTema, RijeciJson, VrstaIgre, ModMeca, Tezina, BrojRijeci, VelicinaMatrice, VremenskoOgranicenjeSekundi, Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'na_cekanju')", Statement.RETURN_GENERATED_KEYS);
             ps.setInt(1, request.getChallengerId());
             ps.setInt(2, request.getOpponentId());
             if (request.getThemeId() == null || request.getThemeId().isBlank()) ps.setNull(3, java.sql.Types.VARCHAR);
             else ps.setString(3, request.getThemeId());
             ps.setString(4, request.getCustomTheme());
             ps.setString(5, toJson(words));
-            ps.setString(6, request.getDifficultyId());
-            ps.setInt(7, words.size());
-            ps.setInt(8, request.getGridSize());
-            ps.setInt(9, 300);
+            String gameType = request.getGameType();
+            ps.setString(6, "zmijica".equals(gameType) ? "zmijica" : "obican");
+            String matchMode = "race".equals(request.getMatchMode()) ? "race" : "versus";
+            ps.setString(7, matchMode);
+            ps.setString(8, request.getDifficultyId());
+            ps.setInt(9, words.size());
+            ps.setInt(10, request.getGridSize());
+            ps.setInt(11, "race".equals(matchMode) ? 0 : 300);
             ps.executeUpdate();
             ResultSet keys = ps.getGeneratedKeys();
             if (!keys.next()) return null;
@@ -247,6 +405,7 @@ public class GameRepository {
     }
 
     public Map<String, Object> rejectChallenge(int challengeId, int userId) {
+        if (authRepository.isAdmin(userId)) return null;
         try (Connection conn = DBUtil.open()) {
             expireChallenges(conn);
             PreparedStatement update = conn.prepareStatement(
@@ -268,6 +427,7 @@ public class GameRepository {
     }
 
     public Map<String, Object> acceptChallenge(int challengeId, int userId) {
+        if (authRepository.isAdmin(userId)) return null;
         try (Connection conn = DBUtil.open()) {
             expireChallenges(conn);
             conn.setAutoCommit(false);
@@ -290,16 +450,18 @@ public class GameRepository {
             update.setInt(1, challengeId);
             update.executeUpdate();
 
-            PreparedStatement insertMatch = conn.prepareStatement("INSERT INTO mec (Izazov_ID, Tema_ID, CustomTema, RijeciJson, Tezina, BrojRijeci, VelicinaMatrice, VremenskoOgranicenjeSekundi, Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'aktivan')", Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement insertMatch = conn.prepareStatement("INSERT INTO mec (Izazov_ID, Tema_ID, CustomTema, RijeciJson, VrstaIgre, ModMeca, OsvojeneRijeciJson, Tezina, BrojRijeci, VelicinaMatrice, VremenskoOgranicenjeSekundi, Status) VALUES (?, ?, ?, ?, ?, ?, '{}', ?, ?, ?, ?, 'aktivan')", Statement.RETURN_GENERATED_KEYS);
             insertMatch.setInt(1, challenge.getInt("ID"));
             if (challenge.getString("Tema_ID") == null) insertMatch.setNull(2, java.sql.Types.VARCHAR);
             else insertMatch.setString(2, challenge.getString("Tema_ID"));
             insertMatch.setString(3, challenge.getString("CustomTema"));
             insertMatch.setString(4, challenge.getString("RijeciJson"));
-            insertMatch.setString(5, challenge.getString("Tezina"));
-            insertMatch.setInt(6, challenge.getInt("BrojRijeci"));
-            insertMatch.setInt(7, challenge.getInt("VelicinaMatrice"));
-            insertMatch.setInt(8, challenge.getInt("VremenskoOgranicenjeSekundi"));
+            insertMatch.setString(5, challenge.getString("VrstaIgre"));
+            insertMatch.setString(6, challenge.getString("ModMeca"));
+            insertMatch.setString(7, challenge.getString("Tezina"));
+            insertMatch.setInt(8, challenge.getInt("BrojRijeci"));
+            insertMatch.setInt(9, challenge.getInt("VelicinaMatrice"));
+            insertMatch.setInt(10, challenge.getInt("VremenskoOgranicenjeSekundi"));
             insertMatch.executeUpdate();
             ResultSet keys = insertMatch.getGeneratedKeys();
             keys.next();
@@ -335,35 +497,65 @@ public class GameRepository {
     }
 
     public Map<String, Object> updateProgress(int matchId, MatchProgressRequest request) {
+        if (authRepository.isAdmin(request.getUserId())) return null;
         try (Connection conn = DBUtil.open()) {
+            conn.setAutoCommit(false);
             PreparedStatement matchPs = conn.prepareStatement(
-                    "SELECT Status, Pobjednik_ID, RijeciJson, BrojRijeci, " +
-                    "LEAST(VremenskoOgranicenjeSekundi, TIMESTAMPDIFF(SECOND, Zapocet, NOW())) AS Proteklo " +
-                    "FROM mec WHERE ID=?");
+                    "SELECT Status, Pobjednik_ID, RijeciJson, BrojRijeci, ModMeca, OsvojeneRijeciJson, " +
+                    "CASE WHEN VremenskoOgranicenjeSekundi > 0 THEN LEAST(VremenskoOgranicenjeSekundi, TIMESTAMPDIFF(SECOND, Zapocet, NOW())) ELSE TIMESTAMPDIFF(SECOND, Zapocet, NOW()) END AS Proteklo " +
+                    "FROM mec WHERE ID=? FOR UPDATE");
             matchPs.setInt(1, matchId);
             ResultSet match = matchPs.executeQuery();
-            if (!match.next()) return null;
-            if ("zavrsen".equals(match.getString("Status"))) return buildFinishedResult(conn, matchId);
+            if (!match.next()) {
+                conn.rollback();
+                return null;
+            }
+            if ("zavrsen".equals(match.getString("Status"))) {
+                conn.rollback();
+                return buildFinishedResult(conn, matchId);
+            }
 
             Set<String> allowedWords = new LinkedHashSet<>(parseSimpleJsonArray(match.getString("RijeciJson")));
-            Set<String> words = cleanWords(request.getFoundWords());
+            Set<String> words = cleanWords(request.getFoundWords(), 30);
             words.retainAll(allowedWords);
             int elapsedSeconds = Math.max(0, match.getInt("Proteklo"));
+            if ("race".equals(match.getString("ModMeca"))) {
+                Map<String, Integer> claimedWords = parseWordOwners(match.getString("OsvojeneRijeciJson"));
+                for (String word : words) {
+                    claimedWords.putIfAbsent(word, request.getUserId());
+                }
+                Set<String> myWords = wordsForOwner(claimedWords, request.getUserId());
+                int penalty = Math.max(0, Math.min(request.getPowerUpPenalty(), 100));
+                int points = Math.max(-100, myWords.size() * 100 - penalty);
+                saveMatchPlayerProgress(conn, matchId, request.getUserId(), myWords, elapsedSeconds, false, points, penalty);
+
+                PreparedStatement claimedPs = conn.prepareStatement("UPDATE mec SET OsvojeneRijeciJson=? WHERE ID=?");
+                claimedPs.setString(1, wordOwnersToJson(claimedWords));
+                claimedPs.setInt(2, matchId);
+                claimedPs.executeUpdate();
+
+                updateRaceOpponentCounts(conn, matchId, claimedWords, request.getUserId(), elapsedSeconds);
+
+                if (claimedWords.size() >= allowedWords.size()) {
+                    conn.commit();
+                    return finishMatch(matchId);
+                }
+
+                Map<String, Object> result = raceProgressPayload(conn, matchId, request.getUserId(), claimedWords, elapsedSeconds, points, penalty);
+                conn.commit();
+                LiveSocketHandler.broadcast("match_progress", mapToJson(result));
+                return result;
+            }
 
             int penalty = Math.max(0, Math.min(request.getPowerUpPenalty(), 100));
             int points = Math.max(-100, words.size() * 100 - penalty);
-            PreparedStatement ps = conn.prepareStatement("UPDATE mec_igrac SET PronadjeneRijeciJson=?, BrojPronadjenih=?, VrijemeSekundi=?, Zavrsio=?, Bodovi=?, PowerUpKazna=? WHERE Mec_ID=? AND Korisnik_ID=?");
-            ps.setString(1, toJson(words));
-            ps.setInt(2, words.size());
-            ps.setInt(3, elapsedSeconds);
-            ps.setBoolean(4, request.isFinished());
-            ps.setInt(5, points);
-            ps.setInt(6, penalty);
-            ps.setInt(7, matchId);
-            ps.setInt(8, request.getUserId());
-            if (ps.executeUpdate() == 0) return null;
+            if (!saveMatchPlayerProgress(conn, matchId, request.getUserId(), words, elapsedSeconds, request.isFinished(), points, penalty)) {
+                conn.rollback();
+                return null;
+            }
 
             if (words.size() >= match.getInt("BrojRijeci")) {
+                conn.commit();
                 return finishMatch(matchId);
             }
 
@@ -375,6 +567,7 @@ public class GameRepository {
             result.put("userId", request.getUserId());
             result.put("points", points);
             result.put("powerUpPenalty", penalty);
+            conn.commit();
             LiveSocketHandler.broadcast("match_progress", mapToJson(result));
             return result;
         } catch (Exception e) {
@@ -386,7 +579,7 @@ public class GameRepository {
     public Map<String, Object> finishMatch(int matchId) {
         try (Connection conn = DBUtil.open()) {
             PreparedStatement statusPs = conn.prepareStatement(
-                    "SELECT Status, Pobjednik_ID, BrojRijeci, VremenskoOgranicenjeSekundi, " +
+                    "SELECT Status, Pobjednik_ID, BrojRijeci, VremenskoOgranicenjeSekundi, ModMeca, " +
                     "TIMESTAMPDIFF(SECOND, Zapocet, NOW()) AS Proteklo FROM mec WHERE ID=?");
             statusPs.setInt(1, matchId);
             ResultSet statusRs = statusPs.executeQuery();
@@ -405,7 +598,10 @@ public class GameRepository {
             Integer winner = null;
             int first = ((Number) list.get(0).get("BrojPronadjenih")).intValue();
             int second = ((Number) list.get(1).get("BrojPronadjenih")).intValue();
-            boolean completedAll = first >= statusRs.getInt("BrojRijeci");
+            boolean raceMode = "race".equals(statusRs.getString("ModMeca"));
+            boolean completedAll = raceMode
+                    ? first + second >= statusRs.getInt("BrojRijeci")
+                    : first >= statusRs.getInt("BrojRijeci");
             boolean timeExpired = statusRs.getInt("Proteklo") >= statusRs.getInt("VremenskoOgranicenjeSekundi");
             if (!completedAll && !timeExpired) return null;
             if (first != second) winner = ((Number) list.get(0).get("Korisnik_ID")).intValue();
@@ -428,10 +624,11 @@ public class GameRepository {
     }
 
     public Map<String, Object> forfeitMatch(int matchId, MatchProgressRequest request) {
+        if (authRepository.isAdmin(request.getUserId())) return null;
         try (Connection conn = DBUtil.open()) {
             conn.setAutoCommit(false);
             PreparedStatement matchPs = conn.prepareStatement(
-                    "SELECT m.Status, m.RijeciJson, LEAST(m.VremenskoOgranicenjeSekundi, TIMESTAMPDIFF(SECOND, m.Zapocet, NOW())) AS Proteklo " +
+                    "SELECT m.Status, m.RijeciJson, CASE WHEN m.VremenskoOgranicenjeSekundi > 0 THEN LEAST(m.VremenskoOgranicenjeSekundi, TIMESTAMPDIFF(SECOND, m.Zapocet, NOW())) ELSE TIMESTAMPDIFF(SECOND, m.Zapocet, NOW()) END AS Proteklo " +
                     "FROM mec m JOIN mec_igrac mi ON mi.Mec_ID=m.ID WHERE m.ID=? AND mi.Korisnik_ID=? FOR UPDATE");
             matchPs.setInt(1, matchId);
             matchPs.setInt(2, request.getUserId());
@@ -446,7 +643,7 @@ public class GameRepository {
             }
 
             Set<String> allowedWords = new LinkedHashSet<>(parseSimpleJsonArray(match.getString("RijeciJson")));
-            Set<String> words = cleanWords(request.getFoundWords());
+            Set<String> words = cleanWords(request.getFoundWords(), 30);
             words.retainAll(allowedWords);
             int penalty = Math.max(0, Math.min(request.getPowerUpPenalty(), 100));
             int points = Math.max(-100, words.size() * 100 - penalty);
@@ -495,6 +692,7 @@ public class GameRepository {
     }
 
     public List<Map<String, Object>> getChallengesForUser(int userId) {
+        if (authRepository.isAdmin(userId)) return new ArrayList<>();
         List<Map<String, Object>> result = new ArrayList<>();
         try (Connection conn = DBUtil.open()) {
             expireChallenges(conn);
@@ -513,6 +711,7 @@ public class GameRepository {
     }
 
     public List<Map<String, Object>> getOutgoingChallengesForUser(int userId) {
+        if (authRepository.isAdmin(userId)) return new ArrayList<>();
         List<Map<String, Object>> result = new ArrayList<>();
         try (Connection conn = DBUtil.open()) {
             expireChallenges(conn);
@@ -531,13 +730,14 @@ public class GameRepository {
     }
 
     public Map<String, Object> getActiveMatchForUser(int userId) {
+        if (authRepository.isAdmin(userId)) return null;
         try (Connection conn = DBUtil.open()) {
             PreparedStatement ps = conn.prepareStatement(
                     "SELECT m.*, i.Izazivac_ID, i.Protivnik_ID, COALESCE(t.Naziv, m.CustomTema) AS TemaNaziv, " +
                     "CASE WHEN i.Izazivac_ID=? THEN protivnik.KorisnickoIme ELSE izazivac.KorisnickoIme END AS ProtivnikIme, " +
                     "moj.PronadjeneRijeciJson AS MojeRijeciJson, moj.BrojPronadjenih AS MojBrojPronadjenih, " +
                     "drugi.BrojPronadjenih AS ProtivnikBrojPronadjenih, " +
-                    "LEAST(m.VremenskoOgranicenjeSekundi, TIMESTAMPDIFF(SECOND, m.Zapocet, NOW())) AS ProtekloSekundi " +
+                    "CASE WHEN m.VremenskoOgranicenjeSekundi > 0 THEN LEAST(m.VremenskoOgranicenjeSekundi, TIMESTAMPDIFF(SECOND, m.Zapocet, NOW())) ELSE TIMESTAMPDIFF(SECOND, m.Zapocet, NOW()) END AS ProtekloSekundi " +
                     "FROM mec m JOIN izazov i ON i.ID=m.Izazov_ID " +
                     "JOIN korisnik izazivac ON izazivac.ID=i.Izazivac_ID " +
                     "JOIN korisnik protivnik ON protivnik.ID=i.Protivnik_ID " +
@@ -560,6 +760,7 @@ public class GameRepository {
     }
 
     public Map<String, Object> getMatchResult(int matchId, int userId) {
+        if (authRepository.isAdmin(userId)) return null;
         try (Connection conn = DBUtil.open()) {
             PreparedStatement allowed = conn.prepareStatement(
                     "SELECT 1 FROM mec_igrac WHERE Mec_ID=? AND Korisnik_ID=?");
@@ -600,6 +801,7 @@ public class GameRepository {
     }
 
     public List<Map<String, Object>> getHistoryForUser(int userId) {
+        if (authRepository.isAdmin(userId)) return new ArrayList<>();
         List<Map<String, Object>> result = new ArrayList<>();
         try (Connection conn = DBUtil.open()) {
             PreparedStatement ps = conn.prepareStatement(
@@ -628,6 +830,7 @@ public class GameRepository {
     }
 
     public Map<String, Object> achievementsForUser(int userId) {
+        if (authRepository.isAdmin(userId)) return Map.of("wins", 0, "matches", 0, "bestWords", 0, "achievements", List.of());
         Map<String, Object> result = new HashMap<>();
         try (Connection conn = DBUtil.open()) {
             PreparedStatement stats = conn.prepareStatement(
@@ -658,8 +861,9 @@ public class GameRepository {
     }
 
     public Map<String, Object> submitTheme(ThemeSubmissionRequest request) {
+        if (authRepository.isAdmin(request.getUserId())) return null;
         try (Connection conn = DBUtil.open()) {
-            Set<String> words = cleanWords(request.getWords());
+            Set<String> words = cleanWords(request.getWords(), 15);
             PreparedStatement ps = conn.prepareStatement("INSERT INTO tema_predlog (Naziv, RijeciJson, PredlozioKorisnik_ID) VALUES (?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, request.getLabel());
             ps.setString(2, toJson(words));
@@ -726,6 +930,29 @@ public class GameRepository {
         return null;
     }
 
+    public Map<String, Object> approveThemeSubmission(int id, Map<String, Object> request) {
+        int adminUserId = intValue(request.get("adminUserId"));
+        if (!authRepository.isAdmin(adminUserId)) return null;
+        return approveThemeSubmission(id);
+    }
+
+    public Map<String, Object> rejectThemeSubmission(int id, Map<String, Object> request) {
+        int adminUserId = intValue(request.get("adminUserId"));
+        if (!authRepository.isAdmin(adminUserId)) return null;
+        try (Connection conn = DBUtil.open()) {
+            PreparedStatement update = conn.prepareStatement("UPDATE tema_predlog SET Status='odbijena', Odgovorena=NOW() WHERE ID=? AND Status='na_cekanju'");
+            update.setInt(1, id);
+            if (update.executeUpdate() == 0) return null;
+            PreparedStatement select = conn.prepareStatement("SELECT * FROM tema_predlog WHERE ID=?");
+            select.setInt(1, id);
+            ResultSet rs = select.executeQuery();
+            return rs.next() ? rowToMap(rs) : null;
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+        return null;
+    }
+
     private Map<String, Object> achievement(String title, boolean unlocked, String description) {
         Map<String, Object> map = new HashMap<>();
         map.put("title", title);
@@ -734,12 +961,12 @@ public class GameRepository {
         return map;
     }
 
-    private Set<String> cleanWords(List<String> rawWords) {
+    private Set<String> cleanWords(List<String> rawWords, int maxLength) {
         Set<String> words = new LinkedHashSet<>();
         if (rawWords == null) return words;
         for (String word : rawWords) {
             String clean = word == null ? "" : word.toUpperCase().replaceAll("[^A-Z]", "");
-            if (clean.length() >= 3 && clean.length() <= 16) words.add(clean);
+            if (clean.length() >= 4 && clean.length() <= maxLength) words.add(clean);
         }
         return words;
     }
@@ -750,6 +977,85 @@ public class GameRepository {
         for (String part : json.replace("[", "").replace("]", "").replace("\"", "").split(",")) {
             String clean = part.trim().toUpperCase().replaceAll("[^A-Z]", "");
             if (!clean.isBlank()) result.add(clean);
+        }
+        return result;
+    }
+
+    private Map<String, Integer> parseWordOwners(String json) {
+        Map<String, Integer> result = new HashMap<>();
+        if (json == null || json.isBlank()) return result;
+        String body = json.trim().replaceAll("^\\{", "").replaceAll("\\}$", "");
+        if (body.isBlank()) return result;
+        for (String pair : body.split(",")) {
+            String[] parts = pair.split(":", 2);
+            if (parts.length != 2) continue;
+            String word = parts[0].replace("\"", "").trim().toUpperCase().replaceAll("[^A-Z]", "");
+            int owner = intValue(parts[1].replace("\"", "").trim());
+            if (!word.isBlank() && owner > 0) result.put(word, owner);
+        }
+        return result;
+    }
+
+    private Set<String> wordsForOwner(Map<String, Integer> owners, int userId) {
+        Set<String> words = new LinkedHashSet<>();
+        for (Map.Entry<String, Integer> entry : owners.entrySet()) {
+            if (entry.getValue() == userId) words.add(entry.getKey());
+        }
+        return words;
+    }
+
+    private String wordOwnersToJson(Map<String, Integer> owners) {
+        List<String> pairs = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : owners.entrySet()) {
+            pairs.add("\"" + entry.getKey().replace("\"", "\\\"") + "\":" + entry.getValue());
+        }
+        return "{" + String.join(",", pairs) + "}";
+    }
+
+    private boolean saveMatchPlayerProgress(Connection conn, int matchId, int userId, Set<String> words, int elapsedSeconds, boolean finished, int points, int penalty) throws Exception {
+        PreparedStatement ps = conn.prepareStatement("UPDATE mec_igrac SET PronadjeneRijeciJson=?, BrojPronadjenih=?, VrijemeSekundi=?, Zavrsio=?, Bodovi=?, PowerUpKazna=? WHERE Mec_ID=? AND Korisnik_ID=?");
+        ps.setString(1, toJson(words));
+        ps.setInt(2, words.size());
+        ps.setInt(3, elapsedSeconds);
+        ps.setBoolean(4, finished);
+        ps.setInt(5, points);
+        ps.setInt(6, penalty);
+        ps.setInt(7, matchId);
+        ps.setInt(8, userId);
+        return ps.executeUpdate() > 0;
+    }
+
+    private void updateRaceOpponentCounts(Connection conn, int matchId, Map<String, Integer> claimedWords, int currentUserId, int elapsedSeconds) throws Exception {
+        PreparedStatement players = conn.prepareStatement("SELECT Korisnik_ID, PowerUpKazna, VrijemeSekundi FROM mec_igrac WHERE Mec_ID=?");
+        players.setInt(1, matchId);
+        ResultSet rs = players.executeQuery();
+        while (rs.next()) {
+            int userId = rs.getInt("Korisnik_ID");
+            Set<String> words = wordsForOwner(claimedWords, userId);
+            int penalty = Math.max(0, rs.getInt("PowerUpKazna"));
+            int points = Math.max(-100, words.size() * 100 - penalty);
+            int playerElapsed = userId == currentUserId ? elapsedSeconds : Math.max(0, rs.getInt("VrijemeSekundi"));
+            saveMatchPlayerProgress(conn, matchId, userId, words, playerElapsed, false, points, penalty);
+        }
+    }
+
+    private Map<String, Object> raceProgressPayload(Connection conn, int matchId, int userId, Map<String, Integer> claimedWords, int elapsedSeconds, int points, int penalty) throws Exception {
+        Map<String, Object> result = new HashMap<>();
+        result.put("ok", true);
+        result.put("matchMode", "race");
+        result.put("matchId", matchId);
+        result.put("userId", userId);
+        result.put("elapsedSeconds", elapsedSeconds);
+        result.put("points", points);
+        result.put("powerUpPenalty", penalty);
+        result.put("claimedWordsJson", wordOwnersToJson(claimedWords));
+        List<Map<String, Object>> players = getMatchPlayers(conn, matchId);
+        result.put("playersJson", listToJson(players));
+        for (Map<String, Object> player : players) {
+            if (((Number) player.get("Korisnik_ID")).intValue() == userId) {
+                result.put("foundCount", player.get("BrojPronadjenih"));
+                break;
+            }
         }
         return result;
     }
@@ -765,6 +1071,12 @@ public class GameRepository {
             pairs.add("\"" + entry.getKey() + "\":" + jsonValue);
         }
         return "{" + String.join(",", pairs) + "}";
+    }
+
+    private String listToJson(List<Map<String, Object>> list) {
+        List<String> items = new ArrayList<>();
+        for (Map<String, Object> item : list) items.add(mapToJson(item));
+        return "[" + String.join(",", items) + "]";
     }
 
     private void expireChallenges(Connection conn) throws Exception {
@@ -786,7 +1098,7 @@ public class GameRepository {
 
     private Map<String, Object> buildFinishedResult(Connection conn, int matchId) throws Exception {
         PreparedStatement matchPs = conn.prepareStatement(
-                "SELECT m.ID, m.Pobjednik_ID, m.RazlogZavrsetka, m.Napustio_ID, m.Tezina, " +
+                "SELECT m.ID, m.Pobjednik_ID, m.RazlogZavrsetka, m.Napustio_ID, m.Tezina, m.ModMeca, m.OsvojeneRijeciJson, " +
                 "COALESCE(t.Naziv, m.CustomTema) AS TemaNaziv, " +
                 "izazivac.ID AS Izazivac_ID, izazivac.KorisnickoIme AS IzazivacIme, " +
                 "protivnik.ID AS Protivnik_ID, protivnik.KorisnickoIme AS ProtivnikIme " +
@@ -803,6 +1115,8 @@ public class GameRepository {
         result.put("matchId", matchId);
         result.put("winnerUserId", match.getObject("Pobjednik_ID"));
         result.put("reason", match.getString("RazlogZavrsetka"));
+        result.put("matchMode", match.getString("ModMeca"));
+        result.put("claimedWordsJson", match.getString("OsvojeneRijeciJson"));
         result.put("forfeitedUserId", match.getObject("Napustio_ID"));
         result.put("difficultyId", match.getString("Tezina"));
         result.put("themeName", match.getString("TemaNaziv"));
@@ -840,6 +1154,72 @@ public class GameRepository {
                 "SELECT 1 FROM mec m JOIN mec_igrac mi ON mi.Mec_ID=m.ID WHERE mi.Korisnik_ID=? AND m.Status='aktivan' LIMIT 1");
         ps.setInt(1, userId);
         return ps.executeQuery().next();
+    }
+
+    private List<Map<String, Object>> getAdminWords() {
+        List<Map<String, Object>> result = new ArrayList<>();
+        try (Connection conn = DBUtil.open()) {
+            PreparedStatement ps = conn.prepareStatement(
+                    "SELECT r.ID, r.Tema_ID, t.Naziv AS TemaNaziv, r.Rijec, r.Tezina, r.Kreirana " +
+                    "FROM tema_rijec r LEFT JOIN tema t ON t.ID=r.Tema_ID " +
+                    "ORDER BY t.Naziv ASC, r.Rijec ASC");
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) result.add(rowToMap(rs));
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+        return result;
+    }
+
+    private Map<String, Object> getThemeById(Connection conn, String id) throws Exception {
+        PreparedStatement ps = conn.prepareStatement(
+                "SELECT t.ID AS id, t.Naziv AS label, t.Staticka AS isBuiltin, COUNT(r.ID) AS wordCount " +
+                "FROM tema t LEFT JOIN tema_rijec r ON r.Tema_ID=t.ID WHERE t.ID=? " +
+                "GROUP BY t.ID, t.Naziv, t.Staticka");
+        ps.setString(1, id);
+        ResultSet rs = ps.executeQuery();
+        return rs.next() ? rowToMap(rs) : null;
+    }
+
+    private void updateThemeReference(Connection conn, String table, String oldId, String newId) throws Exception {
+        PreparedStatement ps = conn.prepareStatement("UPDATE " + table + " SET Tema_ID=? WHERE Tema_ID=?");
+        ps.setString(1, newId);
+        ps.setString(2, oldId);
+        ps.executeUpdate();
+    }
+
+    private void clearThemeReference(Connection conn, String table, String id) throws Exception {
+        PreparedStatement ps = conn.prepareStatement("UPDATE " + table + " SET Tema_ID=NULL WHERE Tema_ID=?");
+        ps.setString(1, id);
+        ps.executeUpdate();
+    }
+
+    private int intValue(Object value) {
+        if (value instanceof Number number) return number.intValue();
+        try {
+            return Integer.parseInt(String.valueOf(value));
+        } catch (Exception ignored) {
+            return 0;
+        }
+    }
+
+    private String textValue(Object value) {
+        return value == null ? "" : String.valueOf(value).trim();
+    }
+
+    private String slugValue(String value) {
+        return value.toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("(^-|-$)", "");
+    }
+
+    private String normalizeAdminWord(String value) {
+        return value.toUpperCase()
+                .replace("Đ", "DJ")
+                .replaceAll("[Š]", "S")
+                .replaceAll("[Ž]", "Z")
+                .replaceAll("[ČĆ]", "C")
+                .replaceAll("[^A-Z]", "");
     }
 
     private void insertMatchPlayer(Connection conn, int matchId, int userId) throws Exception {
@@ -887,6 +1267,7 @@ public class GameRepository {
         user.setIme(rs.getString("Ime"));
         user.setPrezime(rs.getString("Prezime"));
         user.setEmail(rs.getString("Email"));
+        user.setUloga(rs.getString("Uloga"));
         user.setAvatarBoja(rs.getString("AvatarBoja"));
         user.setUkupnoPobjeda(rs.getInt("UkupnoPobjeda"));
         user.setUkupnoPoraza(rs.getInt("UkupnoPoraza"));
