@@ -5,9 +5,14 @@ import {
   Gamepad2,
   History,
   LogOut,
+  Pencil,
+  Plus,
   Search,
+  Save,
+  ShieldCheck,
   Sparkles,
   Swords,
+  Trash2,
   Trophy,
   UserPlus,
   Users,
@@ -18,11 +23,17 @@ import {
   WS_URL,
   acceptChallenge,
   acceptFriend,
+  approveAdminThemeSubmission,
   createChallenge,
+  createAdminTheme,
+  createAdminWord,
+  deleteAdminTheme,
+  deleteAdminWord,
   fetchThemesFromDatabase,
   finishMatch,
   forfeitMatch,
   getActiveMatch,
+  getAdminDashboard,
   getChallenges,
   getFriendsPage,
   getLeaderboard,
@@ -31,17 +42,25 @@ import {
   getOutgoingChallenges,
   loginUser,
   rejectChallenge,
+  rejectAdminThemeSubmission,
   registerUser,
   requestFriend,
+  updateAdminTheme,
+  updateAdminWord,
   updateMatchProgress,
 } from './api.js';
 import { DIFFICULTIES, THEMES } from './data.js';
 import { buildGrid, cellsForSelection, fetchWords, getSelectedWord } from './gameLogic.jsx';
-import { initSound, playFailSound, playSuccessSound, playWinSound } from './sound.js';
+import { initSound, playFailSound, playSuccessSound, playWinSound, startAmbientMusic, stopAmbientMusic } from './sound.js';
 
 const defaultDiff = DIFFICULTIES[0];
 const turnSeconds = 20;
+const SOLO_GAME_LIMIT_SECONDS = 300;
+const GRID_GENERATION_ATTEMPTS = 4;
 const PLAYER_COLORS = ['#ff4b6e', '#00d9b0'];
+const emptyAuthForm = { korisnickoIme: '', ime: '', prezime: '', email: '', lozinka: '' };
+const emptyThemeForm = { id: '', label: '' };
+const emptyWordForm = { themeId: '', word: '', difficulty: 'sve' };
 
 function entityId(item) {
   return item?.ID ?? item?.id;
@@ -75,8 +94,16 @@ function matchOutcome(match, userId) {
     : { label: 'Poraz', className: 'loss' };
 }
 
-function Screen({ active, children, className = '' }) {
-  return <section className={`screen ${active ? 'active' : ''} ${className}`}>{children}</section>;
+function Screen({ active, children, className = '', inert = false }) {
+  return (
+    <section
+      aria-hidden={!active || inert ? 'true' : undefined}
+      className={`screen ${active ? 'active' : ''} ${className}`}
+      inert={inert ? '' : undefined}
+    >
+      {children}
+    </section>
+  );
 }
 
 function EmptyState({ icon: Icon, title, text }) {
@@ -107,7 +134,7 @@ function App() {
     const saved = localStorage.getItem('ukrstene-user');
     return saved ? JSON.parse(saved) : null;
   });
-  const [authForm, setAuthForm] = useState({ korisnickoIme: '', ime: '', prezime: '', email: '', lozinka: '' });
+  const [authForm, setAuthForm] = useState(emptyAuthForm);
   const [mode, setMode] = useState('solo');
   const [onlineOpponent, setOnlineOpponent] = useState(null);
   const [selectedVersusFriend, setSelectedVersusFriend] = useState(null);
@@ -132,6 +159,7 @@ function App() {
   const [turnLeft, setTurnLeft] = useState(turnSeconds);
   const [result, setResult] = useState(null);
   const [turnPopup, setTurnPopup] = useState(null);
+  const [opponentNotice, setOpponentNotice] = useState(null);
   const [dismissedChallengeId, setDismissedChallengeId] = useState(null);
   const [friendSearch, setFriendSearch] = useState('');
   const [challengeClock, setChallengeClock] = useState(Date.now());
@@ -142,12 +170,27 @@ function App() {
   const [confirmExit, setConfirmExit] = useState(false);
   const [socialReady, setSocialReady] = useState(false);
   const [social, setSocial] = useState({ friends: [], friendships: [], allUsers: [], challenges: [], outgoingChallenges: [], activeMatch: null, leaderboard: [], history: [] });
+  const [adminData, setAdminData] = useState({ themes: [], words: [], submissions: [] });
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [themeForm, setThemeForm] = useState(emptyThemeForm);
+  const [editingThemeId, setEditingThemeId] = useState(null);
+  const [wordForm, setWordForm] = useState(emptyWordForm);
+  const [editingWordId, setEditingWordId] = useState(null);
 
   const timerRef = useRef(null);
+  const soloLimitTimerRef = useRef(null);
   const gameStartedAtRef = useRef(null);
   const turnTimerRef = useRef(null);
+  const opponentNoticeTimerRef = useRef(null);
+  const previousOpponentScoreRef = useRef(0);
+  const opponentNoticeReadyRef = useRef(false);
   const launchingMatchRef = useRef(null);
   const liveRefreshRef = useRef(false);
+  const finishingRef = useRef(false);
+  const latestFoundRef = useRef([]);
+  const latestScoresRef = useRef([0, 0]);
+  const latestElapsedRef = useRef(0);
+  const finishGameRef = useRef(null);
 
   const names = useMemo(() => {
     if (mode === 'versus') {
@@ -186,6 +229,7 @@ function App() {
     () => social.friendships.filter((item) => item.Status === 'na_cekanju' && Number(item.Primalac_ID) === entityId(user)),
     [social.friendships, user],
   );
+  const isAdmin = user?.uloga === 'admin';
   const currentThemeLabel = customTheme.trim() || theme.label;
   const selectedOutgoingChallenge = useMemo(
     () => social.outgoingChallenges.find((item) => Number(item.Protivnik_ID) === entityId(selectedVersusFriend)),
@@ -214,6 +258,18 @@ function App() {
     return () => window.removeEventListener('resize', updateViewport);
   }, []);
 
+  useEffect(() => {
+    latestFoundRef.current = found;
+    latestScoresRef.current = scores;
+    latestElapsedRef.current = elapsed;
+  }, [elapsed, found, scores]);
+
+  useEffect(() => {
+    if (error.includes('moraju imati od 4')) {
+      setError('');
+    }
+  }, [error]);
+
   const refreshThemes = useCallback(() => {
     fetchThemesFromDatabase()
       .then((dbThemes) => {
@@ -229,7 +285,7 @@ function App() {
   }, []);
 
   const refreshSocial = useCallback(async () => {
-    if (!user) return;
+    if (!user || user.uloga === 'admin') return;
     const [friendsPage, challenges, outgoingChallenges, currentMatch, leaderboard, history] = await Promise.all([
       getFriendsPage(entityId(user)),
       getChallenges(entityId(user)),
@@ -252,6 +308,107 @@ function App() {
     setSocialReady(true);
   }, [user]);
 
+  const refreshAdmin = useCallback(async () => {
+    if (!user || user.uloga !== 'admin') return;
+    setAdminLoading(true);
+    try {
+      const data = await getAdminDashboard(entityId(user));
+      setAdminData({
+        themes: data.themes || [],
+        words: data.words || [],
+        submissions: data.submissions || [],
+      });
+    } finally {
+      setAdminLoading(false);
+    }
+  }, [user]);
+
+  async function saveAdminTheme() {
+    setError('');
+    try {
+      const payload = { adminUserId: entityId(user), ...themeForm };
+      if (editingThemeId) {
+        await updateAdminTheme(editingThemeId, payload);
+        setNotice('Tema je izmijenjena.');
+      } else {
+        await createAdminTheme(payload);
+        setNotice('Tema je dodata.');
+      }
+      setThemeForm(emptyThemeForm);
+      setEditingThemeId(null);
+      await Promise.all([refreshAdmin(), refreshThemes()]);
+    } catch (err) {
+      setError(err.message || 'Tema nije sacuvana.');
+    }
+  }
+
+  async function removeAdminTheme(id) {
+    if (!window.confirm('Obrisati temu i njene rijeci iz baze?')) return;
+    setError('');
+    try {
+      await deleteAdminTheme(entityId(user), id);
+      setNotice('Tema je obrisana.');
+      if (editingThemeId === id) {
+        setEditingThemeId(null);
+        setThemeForm(emptyThemeForm);
+      }
+      await Promise.all([refreshAdmin(), refreshThemes()]);
+    } catch (err) {
+      setError(err.message || 'Tema nije obrisana.');
+    }
+  }
+
+  async function saveAdminWord() {
+    setError('');
+    try {
+      const payload = { adminUserId: entityId(user), ...wordForm };
+      if (editingWordId) {
+        await updateAdminWord(editingWordId, payload);
+        setNotice('Rijec je izmijenjena.');
+      } else {
+        await createAdminWord(payload);
+        setNotice('Rijec je dodata.');
+      }
+      setWordForm(emptyWordForm);
+      setEditingWordId(null);
+      await Promise.all([refreshAdmin(), refreshThemes()]);
+    } catch (err) {
+      setError(err.message || 'Rijec nije sacuvana.');
+    }
+  }
+
+  async function removeAdminWord(id) {
+    if (!window.confirm('Obrisati rijec iz baze?')) return;
+    setError('');
+    try {
+      await deleteAdminWord(entityId(user), id);
+      setNotice('Rijec je obrisana.');
+      if (editingWordId === id) {
+        setEditingWordId(null);
+        setWordForm(emptyWordForm);
+      }
+      await Promise.all([refreshAdmin(), refreshThemes()]);
+    } catch (err) {
+      setError(err.message || 'Rijec nije obrisana.');
+    }
+  }
+
+  async function handleSubmissionAction(id, action) {
+    setError('');
+    try {
+      if (action === 'approve') {
+        await approveAdminThemeSubmission(entityId(user), id);
+        setNotice('Predlog teme je odobren.');
+      } else {
+        await rejectAdminThemeSubmission(entityId(user), id);
+        setNotice('Predlog teme je odbijen.');
+      }
+      await Promise.all([refreshAdmin(), refreshThemes()]);
+    } catch (err) {
+      setError(err.message || 'Predlog nije obradjen.');
+    }
+  }
+
   const refreshFriendsPage = useCallback(async () => {
     if (!user) return;
     const friendsPage = await getFriendsPage(entityId(user));
@@ -263,8 +420,14 @@ function App() {
     }));
   }, [user]);
 
+  const showOpponentNotice = useCallback((foundCount) => {
+    window.clearTimeout(opponentNoticeTimerRef.current);
+    setOpponentNotice({ id: Date.now(), foundCount });
+    opponentNoticeTimerRef.current = window.setTimeout(() => setOpponentNotice(null), 1800);
+  }, []);
+
   const refreshLiveSocial = useCallback(async () => {
-    if (!user || liveRefreshRef.current) return;
+    if (!user || user.uloga === 'admin' || liveRefreshRef.current) return;
     liveRefreshRef.current = true;
     try {
       const [challenges, outgoingChallenges, currentMatch] = await Promise.all([
@@ -272,6 +435,10 @@ function App() {
         getOutgoingChallenges(entityId(user)),
         getActiveMatch(entityId(user)),
       ]);
+      if (mode === 'versus' && screen === 'game' && entityId(activeMatch) && entityId(currentMatch) === entityId(activeMatch)) {
+        const nextOpponentScore = Number(currentMatch?.ProtivnikBrojPronadjenih || 0);
+        setScores((current) => [current[0], nextOpponentScore]);
+      }
       setSocial((current) => ({
         ...current,
         challenges,
@@ -281,7 +448,7 @@ function App() {
     } finally {
       liveRefreshRef.current = false;
     }
-  }, [user]);
+  }, [activeMatch, mode, screen, user]);
 
   useEffect(() => {
     refreshThemes();
@@ -294,7 +461,19 @@ function App() {
   }, [refreshSocial, user]);
 
   useEffect(() => {
-    if (!user) return undefined;
+    if (isAdmin && activeTab !== 'admin') {
+      setActiveTab('admin');
+    }
+  }, [activeTab, isAdmin]);
+
+  useEffect(() => {
+    if (activeTab === 'admin' && isAdmin) {
+      refreshAdmin().catch((err) => setError(err.message || 'Admin podaci nisu ucitani.'));
+    }
+  }, [activeTab, isAdmin, refreshAdmin]);
+
+  useEffect(() => {
+    if (!user || user.uloga === 'admin') return undefined;
     const poll = window.setInterval(refreshLiveSocial, 3000);
     return () => window.clearInterval(poll);
   }, [refreshLiveSocial, user]);
@@ -324,13 +503,14 @@ function App() {
   }, [challengeDialog, challengeSecondsLeft, refreshLiveSocial]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || user.uloga === 'admin') return;
     const socket = new WebSocket(WS_URL);
     socket.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
         if (message.type === 'match_progress' && mode === 'versus' && entityId(activeMatch) === Number(message.payload?.matchId) && entityId(user) !== Number(message.payload?.userId)) {
-          setScores((current) => [current[0], Number(message.payload?.foundCount || 0)]);
+          const nextOpponentScore = Number(message.payload?.foundCount || 0);
+          setScores((current) => [current[0], nextOpponentScore]);
         }
         if (message.type === 'challenge_rejected' && outgoingChallenge) {
           setNotice('Prijatelj je odbio izazov.');
@@ -349,6 +529,27 @@ function App() {
     };
     return () => socket.close();
   }, [activeMatch, mode, outgoingChallenge, refreshFriendsPage, refreshLiveSocial, user]);
+
+  useEffect(() => () => window.clearTimeout(opponentNoticeTimerRef.current), []);
+
+  useEffect(() => {
+    if (mode !== 'versus' || screen !== 'game') {
+      previousOpponentScoreRef.current = scores[1];
+      opponentNoticeReadyRef.current = false;
+      return;
+    }
+
+    if (!opponentNoticeReadyRef.current) {
+      previousOpponentScoreRef.current = scores[1];
+      opponentNoticeReadyRef.current = true;
+      return;
+    }
+
+    if (scores[1] > previousOpponentScoreRef.current) {
+      showOpponentNotice(scores[1]);
+    }
+    previousOpponentScoreRef.current = scores[1];
+  }, [mode, scores[1], screen, showOpponentNotice]);
 
   async function handleAcceptFriend(friendshipId) {
     setFriendActionId(`accept-${friendshipId}`);
@@ -430,6 +631,21 @@ function App() {
     timerRef.current = null;
   }, []);
 
+  const stopSoloLimitTimer = useCallback(() => {
+    window.clearTimeout(soloLimitTimerRef.current);
+    soloLimitTimerRef.current = null;
+  }, []);
+
+  const startSoloLimitTimer = useCallback((initialElapsed = 0) => {
+    stopSoloLimitTimer();
+    const remainingMs = Math.max(0, (SOLO_GAME_LIMIT_SECONDS - initialElapsed) * 1000);
+    soloLimitTimerRef.current = window.setTimeout(() => {
+      latestElapsedRef.current = SOLO_GAME_LIMIT_SECONDS;
+      setElapsed(SOLO_GAME_LIMIT_SECONDS);
+      finishGameRef.current?.(latestFoundRef.current, latestScoresRef.current);
+    }, remainingMs);
+  }, [stopSoloLimitTimer]);
+
   const showTurnPopup = useCallback((title, message) => {
     setTurnPopup({ title, message });
     window.setTimeout(() => setTurnPopup(null), 1500);
@@ -451,13 +667,16 @@ function App() {
   }, [stopTurnTimer]);
 
   const buildResult = useCallback((nextFound = found, nextScores = scores) => {
+    const finalElapsed = mode === 'solo'
+      ? Math.min(latestElapsedRef.current, SOLO_GAME_LIMIT_SECONDS)
+      : latestElapsedRef.current;
     if (mode === 'solo') {
       const pct = Math.round((nextFound.length / gridData.words.length) * 100) || 0;
       return {
         icon: 'WIN',
         title: `Bravo, ${names.p1}!`,
-        score: formatTime(elapsed),
-        message: `Pronašao/la si ${nextFound.length} od ${gridData.words.length} riječi (${pct}%) za ${formatTime(elapsed)}.`,
+        score: formatTime(finalElapsed),
+        message: `Pronašao/la si ${nextFound.length} od ${gridData.words.length} riječi (${pct}%) za ${formatTime(finalElapsed)}.`,
       };
     }
     const winner = nextScores[0] > nextScores[1] ? names.p1 : nextScores[1] > nextScores[0] ? names.p2 : null;
@@ -465,12 +684,14 @@ function App() {
       icon: winner ? 'WIN' : 'VS',
       title: winner ? `Pobijedio/la ${winner}!` : 'Neriješeno!',
       score: `${nextScores[0]} - ${nextScores[1]}`,
-      message: `${names.p1}: ${nextScores[0]} bod. | ${names.p2}: ${nextScores[1]} bod.\nVrijeme: ${formatTime(elapsed)}`,
+      message: `${names.p1}: ${nextScores[0]} bod. | ${names.p2}: ${nextScores[1]} bod.\nVrijeme: ${formatTime(finalElapsed)}`,
     };
-  }, [elapsed, found, gridData.words.length, mode, names.p1, names.p2, scores]);
+  }, [found, gridData.words.length, mode, names.p1, names.p2, scores]);
 
   function showVersusResult(matchResult) {
     stopGameTimer();
+    stopAmbientMusic();
+    finishingRef.current = true;
     setConfirmExit(false);
     localStorage.removeItem('ukrstene-active-match');
     setScreen('home');
@@ -517,8 +738,12 @@ function App() {
   }
 
   const finishGame = useCallback(async (nextFound = found, nextScores = scores) => {
+    if (finishingRef.current) return;
+    finishingRef.current = true;
     stopGameTimer();
     stopTurnTimer();
+    stopSoloLimitTimer();
+    stopAmbientMusic();
     playWinSound();
     let versusResult = null;
     if (entityId(activeMatch) && user) {
@@ -538,13 +763,22 @@ function App() {
     } else {
       setResult(buildResult(nextFound, nextScores));
     }
-  }, [activeMatch, buildResult, elapsed, found, mode, refreshSocial, scores, stopGameTimer, stopTurnTimer, user]);
+  }, [activeMatch, buildResult, elapsed, found, mode, refreshSocial, scores, stopGameTimer, stopSoloLimitTimer, stopTurnTimer, user]);
+
+  useEffect(() => {
+    finishGameRef.current = finishGame;
+  }, [finishGame]);
 
   useEffect(() => {
     const limit = Number(activeMatch?.VremenskoOgranicenjeSekundi || 300);
     if (screen !== 'game' || mode !== 'versus' || result || elapsed < limit) return;
     finishGame(found, [found.length, scores[1]]);
   }, [activeMatch, elapsed, finishGame, found, mode, result, scores, screen]);
+
+  useEffect(() => {
+    if (screen !== 'game' || mode !== 'solo' || result || elapsed < SOLO_GAME_LIMIT_SECONDS) return;
+    finishGame(found, scores);
+  }, [elapsed, finishGame, found, mode, result, scores, screen]);
 
   useEffect(() => {
     if (screen !== 'game' || mode !== 'multiplayer' || turnLeft !== 0 || result) return;
@@ -562,7 +796,9 @@ function App() {
   useEffect(() => () => {
     stopGameTimer();
     stopTurnTimer();
-  }, [stopGameTimer, stopTurnTimer]);
+    stopSoloLimitTimer();
+    stopAmbientMusic();
+  }, [stopGameTimer, stopSoloLimitTimer, stopTurnTimer]);
 
   async function handleAuth() {
     setError('');
@@ -572,8 +808,10 @@ function App() {
         : await registerUser({ ...authForm, avatarBoja: '#00e5b4' });
       setUser(nextUser);
       setScreen('home');
-      setActiveTab('play');
+      setActiveTab(nextUser?.uloga === 'admin' ? 'admin' : 'play');
       setNotice('');
+      setAuthMode('login');
+      setAuthForm(emptyAuthForm);
       setDismissedChallengeId(null);
     } catch (err) {
       setError(err.message);
@@ -584,6 +822,13 @@ function App() {
     localStorage.removeItem('ukrstene-user');
     localStorage.removeItem('ukrstene-active-match');
     setUser(null);
+    setAuthMode('login');
+    setAuthForm(emptyAuthForm);
+    setMode('solo');
+    setPlayerTwo('');
+    setSelectedVersusFriend(null);
+    setActiveMatch(null);
+    setOnlineOpponent(null);
     setNotice('');
     setError('');
     setDismissedChallengeId(null);
@@ -591,17 +836,30 @@ function App() {
     setSocialReady(false);
     setSocial({ friends: [], friendships: [], allUsers: [], challenges: [], outgoingChallenges: [], activeMatch: null, leaderboard: [], history: [] });
     setScreen('auth');
+    stopSoloLimitTimer();
+    stopAmbientMusic();
   }
 
   function goHome() {
     stopGameTimer();
     stopTurnTimer();
+    stopSoloLimitTimer();
+    stopAmbientMusic();
+    finishingRef.current = false;
     setResult(null);
     setTurnPopup(null);
+    setOpponentNotice(null);
+    window.clearTimeout(opponentNoticeTimerRef.current);
     setActiveMatch(null);
     setOnlineOpponent(null);
     setSelectedVersusFriend(null);
     setScreen('home');
+  }
+
+  function startGameFromUserGesture() {
+    initSound();
+    startAmbientMusic();
+    launchGame();
   }
 
   async function launchGame(match = activeMatch, overrides = {}) {
@@ -618,24 +876,49 @@ function App() {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
     setError('');
+    stopSoloLimitTimer();
+    finishingRef.current = false;
     setResult(null);
     setTurnPopup(null);
+    setOpponentNotice(null);
+    window.clearTimeout(opponentNoticeTimerRef.current);
     setFound([]);
     setDoneCells({});
     setWordColors({});
     setSelectionStart(null);
     setSelectionCells([]);
     setScores([0, 0]);
+    latestFoundRef.current = [];
+    latestScoresRef.current = [0, 0];
+    latestElapsedRef.current = 0;
     setCurrentPlayer(0);
     setElapsed(0);
     setScreen('load');
     setLoadingMessage(apiKey ? 'AI generiše tematske riječi...' : `Pripremam riječi za temu: ${themeLabel}...`);
 
     try {
-      const words = overrides.words?.length
-        ? overrides.words
-        : await fetchWords(themeLabel, themeId, selectedDiff.wc, apiKey, Boolean(customTheme.trim()), selectedDiff.n);
-      const nextGrid = buildGrid(words, selectedDiff.n, gameMode === 'versus' ? entityId(match) : undefined);
+      let words = [];
+      let nextGrid = null;
+      let lastGridError = null;
+      const usePresetWords = Boolean(overrides.words?.length);
+
+      for (let attempt = 1; attempt <= GRID_GENERATION_ATTEMPTS; attempt++) {
+        if (attempt > 1) {
+          setLoadingMessage('Riječi ne staju u tablu, generišem novi set...');
+        }
+        words = usePresetWords
+          ? overrides.words
+          : await fetchWords(themeLabel, themeId, selectedDiff.wc, apiKey, Boolean(customTheme.trim()), selectedDiff.n);
+        try {
+          nextGrid = buildGrid(words, selectedDiff.n, gameMode === 'versus' ? entityId(match) : undefined);
+          break;
+        } catch (gridError) {
+          lastGridError = gridError;
+          if (usePresetWords) break;
+        }
+      }
+
+      if (!nextGrid) throw lastGridError || new Error('Nije moguće pripremiti tablu.');
       const restoredFound = overrides.foundWords || [];
       const restoredCells = {};
       const restoredColors = {};
@@ -648,18 +931,36 @@ function App() {
       });
       setGridData(nextGrid);
       setFound(restoredFound);
+      latestFoundRef.current = restoredFound;
       setDoneCells(restoredCells);
       setWordColors(restoredColors);
-      setScores([restoredFound.length, Number(overrides.opponentScore || 0)]);
+      const restoredScores = [restoredFound.length, Number(overrides.opponentScore || 0)];
+      setScores(restoredScores);
+      latestScoresRef.current = restoredScores;
       const initialElapsed = gameMode === 'versus'
         ? Math.max(0, Number(overrides.elapsedSeconds ?? match?.ProtekloSekundi ?? 0))
         : 0;
       setElapsed(initialElapsed);
+      latestElapsedRef.current = initialElapsed;
       gameStartedAtRef.current = Date.now() - initialElapsed * 1000;
       setScreen('game');
+      startAmbientMusic();
+      if (gameMode === 'solo') startSoloLimitTimer(initialElapsed);
       if (gameMode === 'versus') localStorage.setItem('ukrstene-active-match', String(entityId(match)));
       timerRef.current = window.setInterval(() => {
-        setElapsed(Math.max(0, Math.floor((Date.now() - gameStartedAtRef.current) / 1000)));
+        const nextElapsed = Math.max(0, Math.floor((Date.now() - gameStartedAtRef.current) / 1000));
+        if (gameMode === 'solo' && nextElapsed >= SOLO_GAME_LIMIT_SECONDS) {
+          latestElapsedRef.current = SOLO_GAME_LIMIT_SECONDS;
+          setElapsed(SOLO_GAME_LIMIT_SECONDS);
+          window.clearInterval(timerRef.current);
+          timerRef.current = null;
+          window.setTimeout(() => {
+            finishGameRef.current?.(latestFoundRef.current, latestScoresRef.current);
+          }, 0);
+          return;
+        }
+        latestElapsedRef.current = nextElapsed;
+        setElapsed(nextElapsed);
       }, 250);
       if (gameMode === 'multiplayer') {
         showTurnPopup('Početak igre', `Prvi igra: ${names.p1}`);
@@ -668,10 +969,32 @@ function App() {
       if (entityId(match) && user && !overrides.resume) {
         updateMatchProgress(entityId(match), { userId: entityId(user), foundWords: [], elapsedSeconds: 0, finished: false }).catch(() => null);
       }
+      return true;
     } catch (err) {
-      setError(`Greška: ${err.message}`);
+      if (gameMode === 'versus' && overrides.resume && entityId(match) && user) {
+        localStorage.removeItem('ukrstene-active-match');
+        setActiveMatch(null);
+        setOnlineOpponent(null);
+        setSocial((current) => ({ ...current, activeMatch: null }));
+        await forfeitMatch(entityId(match), {
+          userId: entityId(user),
+          foundWords: [],
+          elapsedSeconds: 0,
+          finished: true,
+        }).catch(() => null);
+        refreshSocial();
+        setNotice('Pokvareni mec je ociscen. Mozes normalno nastaviti.');
+        setError('');
+        setScreen('home');
+        setActiveTab('play');
+        return false;
+      }
+      setError(`Greska: ${err.message}`);
+      stopAmbientMusic();
+      stopSoloLimitTimer();
       setScreen('home');
       setActiveTab('play');
+      return false;
     }
   }
 
@@ -866,15 +1189,21 @@ function App() {
   }
 
   const navItems = [
-    ['play', 'Igra', Gamepad2],
-    ['friends', 'Prijatelji', Users],
-    ['challenges', 'Izazovi', Swords],
-    ['leaderboard', 'Rang lista', Trophy],
+    ...(isAdmin
+      ? [['admin', 'Admin', ShieldCheck]]
+      : [
+        ['play', 'Igra', Gamepad2],
+        ['friends', 'Prijatelji', Users],
+        ['challenges', 'Izazovi', Swords],
+        ['leaderboard', 'Rang lista', Trophy],
+      ]),
   ];
+  const challengeOverlayOpen = screen === 'home' && challengeDialog && entityId(challengeDialog) !== dismissedChallengeId;
+  const overlayOpen = Boolean(confirmExit || challengeOverlayOpen || result || turnPopup);
 
   return (
     <>
-      <Screen active={screen === 'auth'} className="auth-screen">
+      <Screen active={screen === 'auth'} className="auth-screen" inert={overlayOpen}>
         <div className="auth-shell">
           <div className="brand-lockup">
             <img className="brand-mark" src="/ukrstene-logo.png" alt="" />
@@ -910,7 +1239,7 @@ function App() {
         </div>
       </Screen>
 
-      <Screen active={screen === 'home'} className="dashboard-screen">
+      <Screen active={screen === 'home'} className="dashboard-screen" inert={overlayOpen}>
         <div className="app-shell">
           <header className="app-header">
             <div className="brand-lockup compact">
@@ -938,6 +1267,7 @@ function App() {
                   setNotice('');
                   if (id === 'challenges') setDismissedChallengeId(null);
                   if (id === 'friends') refreshFriendsPage().catch(() => null);
+                  if (id === 'admin') refreshAdmin().catch(() => null);
                 }}
               >
                 <Icon size={18} />
@@ -1005,7 +1335,7 @@ function App() {
                         ) : (
                           <div className="friend-choice-list scroll-list friend-scroll">
                             {social.friends.map((friend) => (
-                              <button className={entityId(selectedVersusFriend) === entityId(friend) ? 'selected' : ''} key={entityId(friend)} type="button" onClick={() => setSelectedVersusFriend(friend)}>
+                              <button className={entityId(selectedVersusFriend) === entityId(friend) ? 'selected' : ''} key={entityId(friend)} type="button" onClick={() => { setSelectedVersusFriend(friend); setError(''); }}>
                                 <span className="avatar">{friend.korisnickoIme?.slice(0, 1).toUpperCase()}</span>
                                 <span><strong>{friend.korisnickoIme}</strong><small>Prijatelj</small></span>
                                 {entityId(selectedVersusFriend) === entityId(friend) && <Check size={18} />}
@@ -1021,7 +1351,7 @@ function App() {
                     <div className="settings-heading"><span>Težina</span><small>{diff.sub}</small></div>
                     <div className="difficulty-grid">
                       {DIFFICULTIES.map((item) => (
-                        <button className={`difficulty-choice ${diff.id === item.id ? 'selected' : ''}`} key={item.id} type="button" onClick={() => setDiff(item)}>
+                        <button className={`difficulty-choice ${diff.id === item.id ? 'selected' : ''}`} key={item.id} type="button" onClick={() => { setDiff(item); setError(''); }}>
                           <strong>{item.label}</strong>
                           <span>{item.sub}</span>
                         </button>
@@ -1033,7 +1363,7 @@ function App() {
                     <div className="settings-heading"><span>Tema</span></div>
                     <div className="theme-grid">
                       {themeOptions.map((item) => (
-                        <button className={`theme-choice ${theme.id === item.id && !customTheme ? 'selected' : ''}`} key={item.id} type="button" onClick={() => { setTheme(item); setCustomTheme(''); }}>
+                        <button className={`theme-choice ${theme.id === item.id && !customTheme ? 'selected' : ''}`} key={item.id} type="button" onClick={() => { setTheme(item); setCustomTheme(''); setError(''); }}>
                           {item.label}
                         </button>
                       ))}
@@ -1044,7 +1374,7 @@ function App() {
                     <div className="custom-topic-icon"><WandSparkles size={20} /></div>
                     <label className="field">
                       <span className="label">Tema po tvom izboru</span>
-                      <input className="input" value={customTheme} onChange={(event) => setCustomTheme(event.target.value)} placeholder="NBA kosarka, svemir, filmovi..." />
+                      <input className="input" value={customTheme} onChange={(event) => { setCustomTheme(event.target.value); setError(''); }} placeholder="NBA kosarka, svemir, filmovi..." />
                       <small>{mode === 'versus' ? 'Gemini generiše riječi jednom, a oba igrača dobijaju istu igru.' : 'Unesena tema ide direktno AI generatoru.'}</small>
                     </label>
                   </div>
@@ -1055,7 +1385,7 @@ function App() {
                       {selectedOutgoingChallenge || challengeSending ? 'Zahtjev poslat' : 'Pošalji izazov'}
                     </button>
                   ) : (
-                    <button className="btn btn-teal" type="button" onClick={() => launchGame()}>
+                    <button className="btn btn-teal" type="button" onClick={startGameFromUserGesture}>
                       <Sparkles size={18} />
                       Generiši i igraj
                     </button>
@@ -1088,6 +1418,7 @@ function App() {
                   <label className="search-bar user-search">
                     <Search size={18} />
                     <input
+                      aria-label="Pretraži korisnike"
                       value={friendSearch}
                       onChange={(event) => setFriendSearch(event.target.value)}
                       placeholder="Pretraži po imenu ili korisničkom imenu"
@@ -1170,18 +1501,167 @@ function App() {
               </section>
             )}
 
+            {activeTab === 'admin' && isAdmin && (
+              <section className="content-section admin-panel">
+                <SectionHeader eyebrow="Kontrola" title="Admin panel" text="Upravljanje temama, rijecima i predlozima iz baze." />
+
+                <div className="admin-grid">
+                  <div className="surface">
+                    <div className="surface-title"><h3>{editingThemeId ? 'Izmijeni temu' : 'Dodaj temu'}</h3></div>
+                    <div className="form-grid">
+                      <label className="field">
+                        <span className="label">ID teme</span>
+                        <input className="input" value={themeForm.id} onChange={(event) => setThemeForm({ ...themeForm, id: event.target.value })} placeholder="npr. priroda" />
+                      </label>
+                      <label className="field">
+                        <span className="label">Naziv</span>
+                        <input className="input" value={themeForm.label} onChange={(event) => setThemeForm({ ...themeForm, label: event.target.value })} placeholder="Priroda" />
+                      </label>
+                    </div>
+                    <div className="admin-actions">
+                      <button className="btn btn-teal compact" type="button" onClick={saveAdminTheme} disabled={adminLoading || !themeForm.label.trim()}>
+                        <Save size={17} />{editingThemeId ? 'Sacuvaj' : 'Dodaj'}
+                      </button>
+                      {editingThemeId && (
+                        <button className="btn btn-outline compact" type="button" onClick={() => { setEditingThemeId(null); setThemeForm(emptyThemeForm); }}>
+                          <X size={17} />Odustani
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="surface">
+                    <div className="surface-title"><h3>{editingWordId ? 'Izmijeni rijec' : 'Dodaj rijec'}</h3></div>
+                    <div className="form-grid admin-word-form">
+                      <label className="field">
+                        <span className="label">Tema</span>
+                        <select className="input" value={wordForm.themeId} onChange={(event) => setWordForm({ ...wordForm, themeId: event.target.value })}>
+                          <option value="">Izaberi temu</option>
+                          {adminData.themes.map((item) => <option key={item.id} value={item.id}>{displayThemeLabel(item.label)}</option>)}
+                        </select>
+                      </label>
+                      <label className="field">
+                        <span className="label">Rijec</span>
+                        <input className="input" value={wordForm.word} onChange={(event) => setWordForm({ ...wordForm, word: event.target.value })} placeholder="PLANINA" />
+                      </label>
+                      <label className="field">
+                        <span className="label">Tezina</span>
+                        <select className="input" value={wordForm.difficulty} onChange={(event) => setWordForm({ ...wordForm, difficulty: event.target.value })}>
+                          <option value="sve">Sve</option>
+                          <option value="easy">Lako</option>
+                          <option value="med">Srednje</option>
+                          <option value="hard">Tesko</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div className="admin-actions">
+                      <button className="btn btn-teal compact" type="button" onClick={saveAdminWord} disabled={adminLoading || !wordForm.themeId || !wordForm.word.trim()}>
+                        <Save size={17} />{editingWordId ? 'Sacuvaj' : 'Dodaj'}
+                      </button>
+                      {editingWordId && (
+                        <button className="btn btn-outline compact" type="button" onClick={() => { setEditingWordId(null); setWordForm(emptyWordForm); }}>
+                          <X size={17} />Odustani
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="surface">
+                  <div className="surface-title"><h3>Teme</h3><span>{adminData.themes.length}</span></div>
+                  {adminData.themes.length === 0 ? (
+                    <EmptyState icon={ShieldCheck} title="Nema tema" text="Dodaj prvu temu kroz formu iznad." />
+                  ) : (
+                    <div className="data-list scroll-list admin-list">
+                      {adminData.themes.map((item) => (
+                        <div className="data-row admin-row" key={item.id}>
+                          <div className="avatar"><ShieldCheck size={17} /></div>
+                          <div className="row-copy">
+                            <strong>{displayThemeLabel(item.label)}</strong>
+                            <span>{item.id} - {item.wordCount ?? 0} rijeci</span>
+                          </div>
+                          <div className="row-buttons">
+                            <button className="row-action" type="button" onClick={() => { setEditingThemeId(item.id); setThemeForm({ id: item.id, label: displayThemeLabel(item.label) }); }}>
+                              <Pencil size={16} />Izmijeni
+                            </button>
+                            <button className="row-action danger" type="button" onClick={() => removeAdminTheme(item.id)}>
+                              <Trash2 size={16} />Obrisi
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="surface">
+                  <div className="surface-title"><h3>Rijeci iz baze</h3><span>{adminData.words.length}</span></div>
+                  {adminData.words.length === 0 ? (
+                    <EmptyState icon={Plus} title="Nema rijeci" text="Dodaj rijeci za izabranu temu." />
+                  ) : (
+                    <div className="data-list scroll-list admin-list tall">
+                      {adminData.words.map((item) => (
+                        <div className="data-row admin-row" key={item.ID}>
+                          <div className="avatar">{String(item.Rijec || '?').slice(0, 1)}</div>
+                          <div className="row-copy">
+                            <strong>{item.Rijec}</strong>
+                            <span>{displayThemeLabel(item.TemaNaziv || item.Tema_ID)} - {item.Tezina || 'sve'}</span>
+                          </div>
+                          <div className="row-buttons">
+                            <button className="row-action" type="button" onClick={() => { setEditingWordId(item.ID); setWordForm({ themeId: item.Tema_ID || '', word: item.Rijec || '', difficulty: item.Tezina || 'sve' }); }}>
+                              <Pencil size={16} />Izmijeni
+                            </button>
+                            <button className="row-action danger" type="button" onClick={() => removeAdminWord(item.ID)}>
+                              <Trash2 size={16} />Obrisi
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="surface">
+                  <div className="surface-title"><h3>Predlozi tema</h3><span>{adminData.submissions.length}</span></div>
+                  {adminData.submissions.length === 0 ? (
+                    <EmptyState icon={Check} title="Nema predloga" text="Novi korisnicki predlozi pojavice se ovdje." />
+                  ) : (
+                    <div className="data-list scroll-list admin-list">
+                      {adminData.submissions.map((item) => (
+                        <div className="data-row admin-row" key={item.ID}>
+                          <div className="avatar">{String(item.Naziv || '?').slice(0, 1)}</div>
+                          <div className="row-copy">
+                            <strong>{item.Naziv}</strong>
+                            <span>{parseStoredWords(item.RijeciJson).join(', ') || 'Bez rijeci'} - {item.KorisnickoIme}</span>
+                          </div>
+                          <div className="row-buttons">
+                            <button className="row-action accent" type="button" onClick={() => handleSubmissionAction(item.ID, 'approve')}>
+                              <Check size={16} />Odobri
+                            </button>
+                            <button className="row-action danger" type="button" onClick={() => handleSubmissionAction(item.ID, 'reject')}>
+                              <X size={16} />Odbij
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
           </main>
         </div>
       </Screen>
 
-      <Screen active={screen === 'load'}>
+      <Screen active={screen === 'load'} inert={overlayOpen}>
         <img className="brand-mark loading-mark" src="/ukrstene-logo.png" alt="" />
         <h1 className="loading-title">Pripremamo tablu</h1>
         <div className="spinner" />
         <p className="loading-sub">{loadingMessage}</p>
       </Screen>
 
-      <Screen active={screen === 'game'} className="game-screen">
+      <Screen active={screen === 'game'} className="game-screen" inert={overlayOpen}>
         <header className="game-header">
           <div><div className="game-theme">{currentThemeLabel}</div><div className="timer">{formatTime(elapsed)}</div></div>
           {mode === 'multiplayer' && <div className="stat-pill">Potez: <span>{turnLeft}</span>s</div>}
@@ -1196,6 +1676,12 @@ function App() {
             ? <button className="btn btn-outline compact exit-match" type="button" onClick={() => setConfirmExit(true)}><LogOut size={16} />Izađi iz igre</button>
             : <button className="btn btn-outline compact" type="button" onClick={() => finishGame()}>Završi</button>}
         </header>
+        {mode === 'versus' && opponentNotice && (
+          <div className="opponent-word-notice" key={opponentNotice.id}>
+            <span>{names.p2} je našao/la riječ</span>
+            <strong>{opponentNotice.foundCount}</strong>
+          </div>
+        )}
         {mode === 'multiplayer' && <div className="current-turn">Na potezu: {currentPlayer === 0 ? names.p1 : names.p2}</div>}
         <div className="grid-wrap"><div className="grid" style={{ gridTemplateColumns: `repeat(${gridData.grid.length}, ${cellSize}px)`, gap: `${gridGap}px` }} onMouseLeave={() => selectionStart && setSelectionCells([[selectionStart.r, selectionStart.c]])} onTouchMove={handleTouchMove} onTouchEnd={endSelection}>
           {gridData.grid.map((row, r) => row.map((letter, c) => {
@@ -1219,7 +1705,7 @@ function App() {
 
       {confirmExit && (
         <div className="overlay">
-          <div className="modal">
+          <div className="modal" role="dialog" aria-modal="true" aria-label="Napusti meč">
             <div className="modal-icon"><LogOut size={30} /></div>
             <h2>Napusti meč?</h2>
             <p>Izlazak znači predaju. Protivnik će odmah postati pobjednik i nećeš moći da se vratiš u ovaj meč.</p>
@@ -1229,15 +1715,15 @@ function App() {
         </div>
       )}
 
-      {screen === 'home' && challengeDialog && entityId(challengeDialog) !== dismissedChallengeId && (
+      {challengeOverlayOpen && (
         <div className="overlay challenge-overlay">
-          <div className="challenge-modal">
+          <div className={`challenge-modal ${incomingChallenge ? 'incoming' : 'outgoing'}`} role="dialog" aria-modal="true" aria-labelledby="challenge-title">
             <button className="challenge-close" type="button" onClick={() => setDismissedChallengeId(entityId(challengeDialog))} title="Sakrij prozor">
               <X size={18} />
             </button>
             <div className="challenge-emblem"><Swords size={28} /></div>
             <span className="challenge-kicker">{incomingChallenge ? 'Novi Versus izazov' : 'Izazov je poslat'}</span>
-            <h2>
+            <h2 id="challenge-title">
               {incomingChallenge
                 ? `${incomingChallenge.IzazivacIme} te izaziva`
                 : `Čeka se odgovor korisnika ${outgoingChallenge.ProtivnikIme}`}
@@ -1246,9 +1732,11 @@ function App() {
               <div><span>Tema</span><strong>{displayThemeLabel(challengeDialog.TemaNaziv)}</strong></div>
               <div><span>Težina</span><strong>{challengeDifficulty?.label || challengeDialog.Tezina}</strong></div>
             </div>
-            <div className={`challenge-countdown ${challengeSecondsLeft <= 3 ? 'urgent' : ''}`}>
-              Vrijeme za odgovor: <strong>{challengeSecondsLeft}s</strong>
-            </div>
+            {incomingChallenge && (
+              <div className={`challenge-countdown ${challengeSecondsLeft <= 3 ? 'urgent' : ''}`}>
+                Vrijeme za odgovor: <strong>{challengeSecondsLeft}s</strong>
+              </div>
+            )}
             {incomingChallenge ? (
               <div className="challenge-actions">
                 <button className="btn btn-outline" type="button" onClick={() => rejectIncomingChallenge(incomingChallenge)}><X size={18} />Odbij</button>
@@ -1256,7 +1744,7 @@ function App() {
               </div>
             ) : (
               <>
-                <div className="challenge-waiting"><span />Zahtjev poslat, čeka se odgovor još {challengeSecondsLeft}s...</div>
+                <div className="challenge-waiting"><span />Zahtjev poslat, ceka se odgovor...</div>
                 <button className="btn btn-outline" type="button" onClick={() => setDismissedChallengeId(entityId(outgoingChallenge))}>Nastavi koristiti aplikaciju</button>
               </>
             )}
@@ -1264,7 +1752,7 @@ function App() {
         </div>
       )}
 
-      {result && <div className="overlay"><div className="modal"><div className="modal-icon"><Trophy size={34} /></div><h2>{result.title}</h2><div className="score-big">{result.score}</div><p>{result.message}</p><button className="btn btn-teal" type="button" onClick={() => { setResult(null); setScreen('home'); refreshSocial(); }}>Igraj ponovo</button><button className="btn btn-outline" type="button" onClick={goHome}>Početna</button></div></div>}
+      {result && <div className="overlay"><div className="modal"><div className="modal-icon"><Trophy size={34} /></div><h2>{result.title}</h2><div className="score-big">{result.score}</div><p>{result.message}</p><button className="btn btn-teal" type="button" onClick={() => { finishingRef.current = false; setResult(null); setScreen('home'); refreshSocial(); }}>Igraj ponovo</button><button className="btn btn-outline" type="button" onClick={goHome}>Početna</button></div></div>}
       {turnPopup && <div className="overlay"><div className="modal small-modal"><div className="modal-icon">...</div><h2>{turnPopup.title}</h2><p>{turnPopup.message}</p></div></div>}
     </>
   );

@@ -72,8 +72,8 @@ export function buildGrid(words, n, seed) {
     .map((word) => String(word).toUpperCase().replace(/[^A-Z]/g, ''))
     .filter((word) => word.length >= 4 && word.length <= n))];
 
-  if (normalized.length !== words.length) {
-    throw new Error(`Sve riječi moraju imati od 4 do ${n} slova.`);
+  if (normalized.length === 0) {
+    throw new Error('Nema validnih rijeci za ovu tablu.');
   }
 
   for (let attempt = 0; attempt < 80; attempt++) {
@@ -119,12 +119,35 @@ export function getSelectedWord(grid, cells) {
 
 function normalizeWords(words, count, maxLength) {
   return [...new Set(words
-    .map((word) => String(word).toUpperCase().replace(/[^A-Z]/g, ''))
+    .map((word) => normalizeWordText(word))
     .filter((word) => word.length >= 4 && word.length <= maxLength))]
     .slice(0, count);
 }
 
-export async function fetchWords(themeLabel, themeId, count, apiKey, preferApi = false, maxLength = 15) {
+function normalizeWordText(word) {
+  const cyrillicMap = {
+    '\u0410': 'A', '\u0411': 'B', '\u0412': 'V', '\u0413': 'G', '\u0414': 'D',
+    '\u0402': 'DJ', '\u0415': 'E', '\u0416': 'Z', '\u0417': 'Z', '\u0418': 'I',
+    '\u0408': 'J', '\u041A': 'K', '\u041B': 'L', '\u0409': 'LJ', '\u041C': 'M',
+    '\u041D': 'N', '\u040A': 'NJ', '\u041E': 'O', '\u041F': 'P', '\u0420': 'R',
+    '\u0421': 'S', '\u0422': 'T', '\u040B': 'C', '\u0423': 'U', '\u0424': 'F',
+    '\u0425': 'H', '\u0426': 'C', '\u0427': 'C', '\u040F': 'DZ', '\u0428': 'S',
+  };
+
+  return String(word)
+    .trim()
+    .toUpperCase()
+    .replace(/[\u0410-\u0428\u0402\u0408\u0409\u040A\u040B\u040F]/g, (char) => cyrillicMap[char] || '')
+    .normalize('NFD')
+    .replace(/\u0110/g, 'DJ')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Z]/g, '');
+}
+
+const AI_WORD_ATTEMPTS = 5;
+const AI_GENERATION_ERROR = 'Nije uspjelo da se generisu rijeci preko AI-a. Probajte ponovo.';
+
+export async function fetchWords(themeLabel, themeId, count, apiKey, preferApi = false, maxLength = 15, attempt = 1) {
   if (!preferApi) {
     try {
       const dbWords = await fetchThemeWordsFromDatabase(themeId, Math.max(count * 4, 30));
@@ -141,7 +164,8 @@ export async function fetchWords(themeLabel, themeId, count, apiKey, preferApi =
     if (preferApi) {
       throw new Error('API kljuc nije podesen za temu po izboru.');
     }
-    const fallback = DEMO_WORDS[themeId] || DEMO_WORDS.sport;
+    const fallback = DEMO_WORDS[themeId];
+    if (!fallback) throw new Error('Tema nema pripremljene rijeci. Izaberite drugu temu ili probajte ponovo.');
     const validWords = normalizeWords(fallback, count, maxLength);
     if (validWords.length < count) throw new Error(`Tema nema dovoljno riječi do ${maxLength} slova za ovu tablu.`);
     return validWords;
@@ -149,7 +173,7 @@ export async function fetchWords(themeLabel, themeId, count, apiKey, preferApi =
 
  const prompt = `You are generating words for a word-search puzzle game in Bosnian/Serbian/Croatian language.
 Topic: "${themeLabel}"
-Task: Return exactly ${count} well-known, specific nouns closely related to this topic.
+Task: Return at least ${count} well-known, specific nouns closely related to this topic.
 Rules:
 - Words must be strongly and directly associated with the topic (not loosely related)
 - Prefer concrete, recognizable nouns that players would immediately connect to the topic
@@ -161,38 +185,53 @@ Rules:
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`;
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': apiKey,
-    },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.4,
-        maxOutputTokens: 8192,
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: 'array',
-          items: { type: 'string' },
-          minItems: count,
-          maxItems: count,
-        },
+  let response;
+  let data;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
       },
-    }),
-  });
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: Math.min(0.85, 0.35 + attempt * 0.1),
+          maxOutputTokens: 8192,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: 'array',
+            items: { type: 'string' },
+            minItems: count,
+            maxItems: Math.max(count * 3, count + 8),
+          },
+        },
+      }),
+    });
+    data = await response.json().catch(() => ({}));
+  } catch {
+    if (attempt < AI_WORD_ATTEMPTS) {
+      return fetchWords(themeLabel, themeId, count, apiKey, preferApi, maxLength, attempt + 1);
+    }
+    throw new Error(AI_GENERATION_ERROR);
+  }
 
-  const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data?.error?.message || 'Greška pri pozivu AI-a');
+    if (attempt < AI_WORD_ATTEMPTS) {
+      return fetchWords(themeLabel, themeId, count, apiKey, preferApi, maxLength, attempt + 1);
+    }
+    throw new Error(AI_GENERATION_ERROR);
   }
 
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
   if (!text) {
-    throw new Error('AI nije vratio nikakav odgovor.');
+    if (attempt < AI_WORD_ATTEMPTS) {
+      return fetchWords(themeLabel, themeId, count, apiKey, preferApi, maxLength, attempt + 1);
+    }
+    throw new Error(AI_GENERATION_ERROR);
   }
 
   // Strip markdown fences if present
@@ -204,16 +243,25 @@ Rules:
   try {
     words = JSON.parse(jsonStr);
   } catch {
-    throw new Error('AI nije vratio ispravne podatke. Pokušajte ponovo.');
+    if (attempt < AI_WORD_ATTEMPTS) {
+      return fetchWords(themeLabel, themeId, count, apiKey, preferApi, maxLength, attempt + 1);
+    }
+    throw new Error(AI_GENERATION_ERROR);
   }
 
   if (!Array.isArray(words) || words.length === 0) {
-    throw new Error('AI nije vratio nijednu riječ.');
+    if (attempt < AI_WORD_ATTEMPTS) {
+      return fetchWords(themeLabel, themeId, count, apiKey, preferApi, maxLength, attempt + 1);
+    }
+    throw new Error(AI_GENERATION_ERROR);
   }
 
   const validWords = normalizeWords(words, count, maxLength);
   if (validWords.length < count) {
-    throw new Error(`AI nije vratio dovoljno riječi do ${maxLength} slova. Pokušaj ponovo.`);
+    if (attempt < AI_WORD_ATTEMPTS) {
+      return fetchWords(themeLabel, themeId, count, apiKey, preferApi, maxLength, attempt + 1);
+    }
+    throw new Error(AI_GENERATION_ERROR);
   }
   return validWords;
 }

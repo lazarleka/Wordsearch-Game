@@ -7,6 +7,7 @@ public class Korisnik {
     private String prezime;
     private String email;
     private String lozinka;
+    private String uloga;
     private String avatarBoja;
     private int ukupnoPobjeda;
     private int ukupnoPoraza;
@@ -27,6 +28,8 @@ public class Korisnik {
     public void setEmail(String email) { this.email = email; }
     public String getLozinka() { return lozinka; }
     public void setLozinka(String lozinka) { this.lozinka = lozinka; }
+    public String getUloga() { return uloga; }
+    public void setUloga(String uloga) { this.uloga = uloga; }
     public String getAvatarBoja() { return avatarBoja; }
     public void setAvatarBoja(String avatarBoja) { this.avatarBoja = avatarBoja; }
     public int getUkupnoPobjeda() { return ukupnoPobjeda; }

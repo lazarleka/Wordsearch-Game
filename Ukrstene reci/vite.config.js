@@ -2,9 +2,14 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   cacheDir: '.vite-cache',
-  optimizeDeps: {
-    esbuildOptions: {
-      absWorkingDir: 'C:/Users/User/OneDrive/Desktop/grafika/Ukrstene reci',
-    },
+  server: {
+    host: '127.0.0.1',
+    port: 4713,
+    strictPort: true,
+  },
+  preview: {
+    host: '127.0.0.1',
+    port: 4713,
+    strictPort: true,
   },
 });

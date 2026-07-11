@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
 @CrossOrigin(origins = "*")
 @RequestMapping(value = "/api")
@@ -50,9 +52,9 @@ public class ThemeController {
     }
 
     @PostMapping(value = "/admin/theme-submissions/{id}/approve")
-    public ResponseEntity<?> approveSubmission(@PathVariable int id) {
-        Object approved = gameService.approveThemeSubmission(id);
-        if (approved == null) return ResponseEntity.notFound().build();
+    public ResponseEntity<?> approveSubmission(@PathVariable int id, @RequestBody Map<String, Object> request) {
+        Object approved = gameService.approveThemeSubmission(id, request);
+        if (approved == null) return ResponseEntity.status(403).body("Predlog nije odobren.");
         return ResponseEntity.ok(approved);
     }
 }

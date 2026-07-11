@@ -474,6 +474,7 @@ button, input, textarea { touch-action: manipulation; }
   color: var(--muted);
   font-size: 0.8rem;
 }
+.challenge-modal.outgoing .challenge-countdown { display: none; }
 .challenge-countdown strong { color: var(--teal); font-size: 1rem; }
 .challenge-countdown.urgent strong { color: var(--danger); }
 .challenge-waiting {
@@ -508,18 +509,31 @@ button, input, textarea { touch-action: manipulation; }
 .search-bar input { min-width: 0; border: 0; outline: 0; color: var(--text); background: transparent; }
 .search-bar input::placeholder { color: #747487; }
 .search-bar button, .row-action { display: inline-flex; min-height: 34px; align-items: center; justify-content: center; gap: 6px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 5px; color: var(--text); background: var(--surface-3); font-size: 0.76rem; font-weight: 800; }
+.data-row .row-action { width: 112px; min-width: 112px; max-width: 112px; box-sizing: border-box; }
 .row-action.accent { border-color: rgba(255, 75, 110, 0.35); color: var(--accent); background: var(--accent-soft); }
+.row-action.danger { border-color: rgba(255, 115, 141, 0.35); color: var(--danger); background: rgba(255, 115, 141, 0.09); }
+.admin-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.admin-actions, .row-buttons { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.admin-word-form { grid-template-columns: 1.2fr 1fr 0.8fr; }
+.admin-list { max-height: 330px; }
+.admin-list.tall { max-height: 430px; }
+.admin-row { grid-template-columns: auto minmax(0, 1fr) auto; }
 .relationship-status {
   display: inline-flex;
-  min-height: 32px;
+  width: 112px;
+  min-width: 112px;
+  max-width: 112px;
+  min-height: 34px;
   align-items: center;
+  justify-content: center;
   gap: 5px;
-  padding: 6px 9px;
+  padding: 7px 10px;
   border-radius: 5px;
   color: var(--muted);
   background: var(--surface-3);
-  font-size: 0.72rem;
+  font-size: 0.76rem;
   font-weight: 800;
+  box-sizing: border-box;
 }
 
 .relationship-status.friend { color: var(--teal); background: var(--teal-soft); }
@@ -609,6 +623,36 @@ button, input, textarea { touch-action: manipulation; }
 .player-score.current strong { color: var(--teal); }
 .vs { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 50%; color: #161109; background: var(--gold); font-weight: 800; }
 .current-turn { margin: -4px 0 9px; color: var(--teal); font-size: 0.76rem; font-weight: 700; }
+.opponent-word-notice {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: -2px 0 10px;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 200, 69, 0.22);
+  border-radius: 999px;
+  color: var(--muted);
+  background: rgba(255, 200, 69, 0.08);
+  font-size: 0.72rem;
+  font-weight: 800;
+  animation: opponentWordNotice 1.8s ease both;
+}
+.opponent-word-notice strong {
+  display: grid;
+  min-width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 50%;
+  color: #161109;
+  background: var(--gold);
+  font-size: 0.78rem;
+}
+@keyframes opponentWordNotice {
+  0% { opacity: 0; transform: translateY(-5px) scale(0.98); }
+  18% { opacity: 1; transform: translateY(0) scale(1); }
+  78% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-4px) scale(0.99); }
+}
 .grid-wrap { width: 100%; max-width: 100%; overflow: hidden; }
 .grid { display: grid; gap: 3px; margin: 0 auto; user-select: none; touch-action: none; }
 .cell { display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-soft); border-radius: 5px; color: var(--text); background: var(--surface); font-weight: 800; transition: background 0.1s, transform 0.1s, border-color 0.1s; }
@@ -644,7 +688,7 @@ button, input, textarea { touch-action: manipulation; }
   .app-header { padding-bottom: 14px; }
   .app-nav {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(62px, 1fr));
     gap: 5px;
     margin: 14px 0 24px;
     overflow: visible;
@@ -758,6 +802,7 @@ button, input, textarea { touch-action: manipulation; }
   .data-row .avatar { width: 34px; height: 34px; }
   .data-row .row-action,
   .data-row .row-actions,
+  .data-row .row-buttons,
   .data-row .metric,
   .data-row .relationship-status,
   .data-row .request-sent-status,
@@ -767,6 +812,9 @@ button, input, textarea { touch-action: manipulation; }
   }
   .row-actions { display: grid; grid-template-columns: 1fr 1fr; }
   .row-actions .row-action { grid-column: auto; }
+  .row-buttons { display: grid; grid-template-columns: 1fr 1fr; }
+  .row-buttons .row-action { grid-column: auto; width: 100%; min-width: 0; max-width: none; }
+  .admin-grid, .admin-word-form { grid-template-columns: 1fr; }
   .match-outcome { min-width: 0; }
   .rank-row { grid-template-columns: 24px auto minmax(0, 1fr); }
   .rank-row .wins { grid-column: 3; }

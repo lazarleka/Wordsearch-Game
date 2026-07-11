@@ -1,8 +1,8 @@
 function getFallbackWords(theme, count) {
-  const base = DEMO[theme] || (() => {
-    const all = Object.values(DEMO).flat();
-    return all.filter((_, i) => i % 4 === 0);
-  })();
+  const base = DEMO[theme];
+  if (!base) {
+    throw new Error('Tema nema pripremljene rijeci. Izaberite drugu temu ili probajte ponovo.');
+  }
 
   return [...base]
     .sort(() => Math.random() - 0.5)
@@ -34,6 +34,8 @@ Bez uvodnog teksta.
 Format odgovora mora biti tačno ovakav:
 ["REC1","REC2","REC3"]`;
 
+  const aiError = new Error('Nije uspjelo da se generisu rijeci preko AI-a. Probajte ponovo.');
+
   try {
     const res = await fetch(
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent',
@@ -56,8 +58,8 @@ Format odgovora mora biti tačno ovakav:
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      console.warn('Gemini API greška, koristim fallback reči:', err);
-      return getFallbackWords(theme, count);
+      console.warn('Gemini API greska:', err);
+      throw aiError;
     }
 
     const data = await res.json();
@@ -66,8 +68,7 @@ Format odgovora mora biti tačno ovakav:
     const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     if (!raw) {
-      console.warn('Gemini nije vratio tekst, koristim fallback.');
-      return getFallbackWords(theme, count);
+      throw aiError;
     }
 
     let arr = null;
@@ -80,18 +81,15 @@ Format odgovora mora biti tačno ovakav:
         try {
           arr = JSON.parse(m[0]);
         } catch {
-          console.warn('Neuspešan parse izdvojenog JSON-a, koristim fallback.');
-          return getFallbackWords(theme, count);
+          throw aiError;
         }
       } else {
-        console.warn('Gemini nije vratio validan JSON niz, koristim fallback.');
-        return getFallbackWords(theme, count);
+        throw aiError;
       }
     }
 
     if (!Array.isArray(arr)) {
-      console.warn('Gemini odgovor nije niz, koristim fallback.');
-      return getFallbackWords(theme, count);
+      throw aiError;
     }
 
     arr = arr
@@ -101,24 +99,15 @@ Format odgovora mora biti tačno ovakav:
     arr = [...new Set(arr)];
 
     if (arr.length < 3) {
-      console.warn('Premalo validnih reči od Gemini-ja, koristim fallback.');
-      return getFallbackWords(theme, count);
+      throw aiError;
     }
 
-    while (arr.length < count) {
-      const fallback = getFallbackWords(theme, count);
-      for (const word of fallback) {
-        if (!arr.includes(word)) {
-          arr.push(word);
-        }
-        if (arr.length === count) break;
-      }
-    }
+    if (arr.length < count) throw aiError;
 
     return arr.slice(0, count);
 
   } catch (error) {
-    console.warn('Greška u fetchWords(), koristim fallback reči:', error);
-    return getFallbackWords(theme, count);
+    console.warn('Greska u fetchWords():', error);
+    throw aiError;
   }
 }

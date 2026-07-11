@@ -138,6 +138,54 @@ export function getPendingThemeSubmissions() {
   return getJson('/admin/theme-submissions');
 }
 
-export function approveThemeSubmission(id) {
-  return sendJson(API_URL, `/admin/theme-submissions/${id}/approve`, {});
+export function approveThemeSubmission(id, adminUserId) {
+  return sendJson(API_URL, `/admin/theme-submissions/${id}/approve`, { adminUserId });
+}
+
+export function getAdminDashboard(adminUserId) {
+  return getJson(`/admin/dashboard?adminUserId=${encodeURIComponent(adminUserId)}`);
+}
+
+export function createAdminTheme(payload) {
+  return sendJson(API_URL, '/admin/themes', payload);
+}
+
+export function updateAdminTheme(id, payload) {
+  return sendJson(API_URL, `/admin/themes/${encodeURIComponent(id)}`, payload);
+}
+
+export function deleteAdminTheme(adminUserId, id) {
+  return fetch(`${API_URL}/admin/themes/${encodeURIComponent(id)}?adminUserId=${encodeURIComponent(adminUserId)}`, { method: 'DELETE' })
+    .then(async (response) => {
+      const text = await response.text();
+      const data = text ? tryJson(text) : null;
+      if (!response.ok) throw new Error(data?.error || data || 'API greska');
+      return data;
+    });
+}
+
+export function createAdminWord(payload) {
+  return sendJson(API_URL, '/admin/words', payload);
+}
+
+export function updateAdminWord(id, payload) {
+  return sendJson(API_URL, `/admin/words/${encodeURIComponent(id)}`, payload);
+}
+
+export function deleteAdminWord(adminUserId, id) {
+  return fetch(`${API_URL}/admin/words/${encodeURIComponent(id)}?adminUserId=${encodeURIComponent(adminUserId)}`, { method: 'DELETE' })
+    .then(async (response) => {
+      const text = await response.text();
+      const data = text ? tryJson(text) : null;
+      if (!response.ok) throw new Error(data?.error || data || 'API greska');
+      return data;
+    });
+}
+
+export function approveAdminThemeSubmission(adminUserId, id) {
+  return sendJson(API_URL, `/admin/theme-submissions/${id}/approve`, { adminUserId });
+}
+
+export function rejectAdminThemeSubmission(adminUserId, id) {
+  return sendJson(API_URL, `/admin/theme-submissions/${id}/reject`, { adminUserId });
 }

@@ -1,5 +1,9 @@
 let audioCtx = null;
 let soundEnabled = false;
+let ambientGain = null;
+let ambientTimer = null;
+let ambientStep = 0;
+let ambientOscillators = [];
 
 export function initSound() {
   try {
@@ -14,6 +18,80 @@ export function initSound() {
     soundEnabled = true;
   } catch (err) {
     console.warn('Ne mogu da pokrenem zvuk:', err);
+  }
+}
+
+export function startAmbientMusic() {
+  try {
+    if (!audioCtx) initSound();
+    if (!audioCtx || !soundEnabled || ambientTimer) return;
+
+    ambientGain = audioCtx.createGain();
+    ambientGain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    ambientGain.gain.linearRampToValueAtTime(0.028, audioCtx.currentTime + 1.8);
+    ambientGain.connect(audioCtx.destination);
+
+    const chords = [
+      [196, 246.94, 293.66],
+      [174.61, 220, 261.63],
+      [207.65, 246.94, 329.63],
+      [164.81, 220, 293.66],
+    ];
+
+    const playPad = () => {
+      if (!audioCtx || !ambientGain) return;
+      const now = audioCtx.currentTime;
+      const chord = chords[ambientStep % chords.length];
+      chord.forEach((freq, index) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+        osc.frequency.linearRampToValueAtTime(freq + (index - 1) * 1.5, now + 4.5);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.linearRampToValueAtTime(0.16, now + 1.2);
+        gain.gain.linearRampToValueAtTime(0.0001, now + 5.8);
+        osc.connect(gain);
+        gain.connect(ambientGain);
+        osc.start(now);
+        osc.stop(now + 6);
+        ambientOscillators.push(osc);
+        osc.onended = () => {
+          ambientOscillators = ambientOscillators.filter((item) => item !== osc);
+        };
+      });
+      ambientStep += 1;
+    };
+
+    playPad();
+    ambientTimer = window.setInterval(playPad, 5200);
+  } catch (err) {
+    console.warn('Ne mogu da pokrenem ambijentalnu muziku:', err);
+  }
+}
+
+export function stopAmbientMusic() {
+  if (ambientTimer) {
+    window.clearInterval(ambientTimer);
+    ambientTimer = null;
+  }
+  ambientOscillators.forEach((osc) => {
+    try {
+      osc.stop();
+    } catch {
+      // Oscillator may already be stopped.
+    }
+  });
+  ambientOscillators = [];
+  if (ambientGain) {
+    try {
+      const gainToStop = ambientGain;
+      ambientGain = null;
+      gainToStop.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + 0.7);
+      window.setTimeout(() => gainToStop.disconnect(), 800);
+    } catch {
+      ambientGain = null;
+    }
   }
 }
 
