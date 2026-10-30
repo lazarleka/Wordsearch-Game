@@ -1,0 +1,13 @@
+# Tajni podaci (VITE_ varijable zavrse u javnom JS bundle-u - nikad ne stavljaj API kljuceve u njih)
+.env
+.env.local
+.env.*.local
+
+# Build, kes i logovi
+node_modules/
+dist/
+target/
+.npm-cache/
+.codex/
+__pycache__/
+*.log

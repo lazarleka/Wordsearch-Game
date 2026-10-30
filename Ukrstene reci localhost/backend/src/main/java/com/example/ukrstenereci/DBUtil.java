@@ -21,10 +21,10 @@ public class DBUtil {
     private static final String PORT = setting("DB_PORT", "app.db.port", "3306");
     private static final String DB_NAME = setting("DB_NAME", "app.db.name", "ukrstene_reci");
     private static final String USERNAME = setting("DB_USERNAME", "app.db.username", "root");
-    private static final String PASSWORD = setting("DB_PASSWORD", "app.db.password", "lazar2004");
+    private static final String PASSWORD = setting("DB_PASSWORD", "app.db.password", "");
     private static final String ADMIN_USERNAME = setting("ADMIN_USERNAME", "app.admin.username", "admin");
     private static final String ADMIN_EMAIL = setting("ADMIN_EMAIL", "app.admin.email", "admin@ukrstene.local");
-    private static final String ADMIN_PASSWORD = setting("ADMIN_PASSWORD", "app.admin.password", "Admin123!");
+    private static final String ADMIN_PASSWORD = setting("ADMIN_PASSWORD", "app.admin.password", "");
     private static final String SSL_MODE = setting(
             "DB_SSL_MODE",
             "app.db.ssl-mode",
@@ -237,6 +237,10 @@ public class DBUtil {
     }
 
     private static void seedAdminUser(Connection conn) {
+        if (ADMIN_PASSWORD == null || ADMIN_PASSWORD.isBlank()) {
+            System.out.println("ADMIN_PASSWORD nije postavljen - admin nalog se ne kreira/azurira.");
+            return;
+        }
         try (PreparedStatement updateExisting = conn.prepareStatement(
                 "UPDATE korisnik SET KorisnickoIme=?, Ime='Admin', Prezime='Panel', LozinkaHash=?, Uloga='admin', AvatarBoja='#ffc845' WHERE Email=?")) {
             updateExisting.setString(1, ADMIN_USERNAME.trim().toLowerCase());
